@@ -1,0 +1,61 @@
+NeoGAF thread summarizer shifts through thread pages starting from the page it was called on, and then allows you to view most quoted posts with a threshold you can set. Once a thread is analysed, you can display posts with different quote threshold values. You can also track your own or any user's posts, and replies to those posts. Pages are cached so you can switch between pages really fast.
+
+Version 1.6.1.2 Change log
+Added populate pages in quick settings.
+
+Version 1.6.1.1 Change log
+After an analysis is complete, the pages are now automatically populated for quote chains. This means you don't have to switch to quoted only view, and you can go on reading the threads as usual and still track conversations.
+
+Version 1.5.1 Change log
+*Fixed an issue with animation causing memory leak
+*Major new feature: Recursive thread view.  Now you can list posts that quoted posts that quoted posts .. that quoted posts. This allows you to follow a back-and-forth replies or posts that cause long chains of replies.
+*Manually refresh page caches. Now you can manually update the cached pages to reflect latest edits / posts. This is also paving the way for a "live thread view", which will give the extension a paginated auto updating live view of the page.
+
+Version 1.4.1 Change log
+*This is a bug fix update.
+*Fixed a bug that was preventing the last page to be updated in cache
+*Turning off "cache analysed pages" setting immediately deletes all page download caches. If the extension fails to update the pages of already analysed pages, you can turn this on and off to get rid of caches.
+
+Version 1.4.0 Change log
+*There's now an advanced options page. Linked from extensions page in chrome.
+*Cached pages and analysis data is automatically removed after a time of inactivity. The amount of time can be set in options page. This reduces memory consumption without the user explicitly clearing the cache.
+*The analysis cache and page caches are now separate entities, so you can have cached pages without analysis cache and vice versa. This will allow future enhancements to GAF browsing.
+*Re-analysis of threads are much faster as the extension now uses existing page caches except for the last page.
+
+Version 1.3.4.1 Change log
+*Fixed by-design behavior that counts the separated snippets of the same quoted post to be counted multiple times.
+*Now you can re-do the analysis on top of a previous analysis without having to clear thread cache. This allows you to re-analyze last page along with the added post and pages and update the thread cache without a full analysis. Page already analysed error is no longer thrown. You can start analysis from already analysed pages to update the thread cache to the latest version of the posts and page.
+*Some CSS style fixes
+
+Version 1.3.3.1 Change log
+*Slightly less memory usage when using cache function
+*Changed the UI a bit
+*Now the quoter post lists are collapsible
+*Options are saved and synced to cloud so you don't have to re-enter settings every time browser is closed of the extension is updated.
+
+Version 1.3.2.2 Changle log:
+*Fixed a minor bug introduced in 1.3.2 that prevented correct top-quoted sort.
+
+Version 1.3.2 Change log:
+*Quoted and quoting posts are now displayed from cache if cache pages option is turned on.
+
+Version 1.3.1 Change log:
+*Analysed pages are now also cached and loaded from memory for navigating the thread (optional)
+*You no longer have to reload page to change the display results settings.
+*Lots of back-end changes to be better future-proof
+
+Version 1.2.2 Change log:
+*All loading and analysis now done in background so you can continue reading the page you are on.
+*UI enhancements
+*Abort analysis button now should work properly.
+*Extension now obeys your preferred domain prefix for neogaf.com.
+
+Version 1.1 Change log:
+*It's now possible to track posts by specific users, this allows you to view replies to your post or keep track of your favorite posters.
+*The UI remembers your latest settings during a session.
+
+Version 1.0 Change log:
+*The UI was slightly changed to make more sense.
+*The posts are now loaded in correct order.
+*Added the option to sort posts by the quote popularity (default is chronological.)
+*Better error handling

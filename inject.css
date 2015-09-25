@@ -1,0 +1,93 @@
+.gaf_enhance_extension_posts_quoter-holder {
+padding: 0 0 3px 30px;
+}
+
+.gaf_enhance_extension_posts_followed {
+font-size: 80%;
+}
+
+/*
+.gaf_enhance_extension_active {
+
+}
+    */
+a.gaf_enhance_extension_cached {
+    background-color: #dee7ee;
+    transition: background 0.2s;
+}
+
+#gaf_enhance_extension_threadinfo {
+padding: 2px 10px 2px 12px;
+background-color: #01518e;
+margin-bottom: 1px;
+color: white;
+}
+
+span.gaf_enhance_extension_collapse {
+    display: inline-block;
+	background-position: -60px -245px;
+	background-image: url("images/neogaf2/sprite.png");
+	background-repeat: no-repeat;
+	background-size: 320px 400px;
+    width: 16px;
+    height: 16px;
+    text-align: center;
+    transform: rotate(0deg);
+    transition: transform 0.2s;
+    cursor: pointer;
+	margin-top: 10px;
+	margin-left: -23px;
+	float: left;
+}
+
+span.gaf_enhance_extension_collapse:hover {
+    transform: rotate(180deg);
+}
+
+span.gaf_enhance_extension_collapse.gaf_enhance_extension_clicked {
+    transform: rotate(180deg);
+}
+
+span.gaf_enhance_extension_cachedinfo {
+    color: #9089FF;
+}
+
+#gaf_enhance_extension_refreshcache {
+    color: #FFFFFF;
+}
+
+#gaf_enhance_extension_refreshcache:hover {
+    color: #AAAAFF;
+}
+
+span.gaf_enhance_extension_loading {
+    display: inline-block;
+	margin: -0.5em 0 0 0.3em;
+	padding: 0;
+    box-sizing: border-box;
+    width: 1.5em;
+    height: 1.5em;
+	vertical-align: bottom;
+    border: 3px solid transparent;
+    border-color: white white transparent transparent;
+    border-radius: 100%;
+    transition: opacity 0.3s, visibility 0.3s;
+    -webkit-animation-name: loading;
+    -webkit-animation-duration: 0.9s;
+    -webkit-animation-iteration-count: infinite;
+    -webkit-animation-timing-function: linear;
+}
+@-webkit-keyframes loading {
+    from {
+        transform: rotate(0deg)
+    }
+    to {
+        transform: rotate(360deg)
+    }
+}
+
+/*
+a.gaf_enhance_extension_lister {
+
+}
+*/

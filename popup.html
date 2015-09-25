@@ -1,0 +1,181 @@
+<!doctype html>
+
+<html>
+
+<head>
+    <title>NEOGAF Thread Analyser Beta</title>
+    <style>
+        body {
+            overflow-x: hidden;
+        }
+
+        button {
+            display: block;
+            width: 98%;
+            min-height: 2.2em;
+            margin: 5px auto 0;
+            background: #3499da;
+            border: none;
+            color: #eee;
+            font-size: 1.2em;
+            line-height: 2.2em;
+            font-weight: bold;
+            -webkit-border-radius: 5px;
+        }
+
+        div#buttons {
+            width: 200px;
+        }
+
+        select {
+            width: 98%;
+            display: block;
+            margin-top: 5px;
+        }
+
+        input {
+            width: 98%;
+            display: block;
+            font-size: 1.2em;
+            line-height: 1.8em;
+            font-weight: normal;
+        }
+
+            input#threshold {
+                line-height: 1.4em;
+                width: 2.2em;
+                display: inline;
+                text-align: center;
+            }
+
+        button:enabled {
+            -webkit-transition: background .4s ease, color .3s, transform .4s ease;
+        }
+
+            button:enabled:hover {
+                background: #3081ba;
+                color: #fff;
+            }
+
+        button:disabled {
+            color: #66bbfa;
+			transform: scale(0.96,0.96);
+        }
+
+        div.cover {
+            overflow: hidden;
+            padding: 0;
+        }
+
+
+        .cover {
+            overflow: hidden;
+        }
+
+        .cover > * {
+            margin-top: -3.2em;
+        }
+
+        .cover.activated > div {
+            margin-top: 0;
+        }
+
+        .cover.activated > * {
+            margin-top: 5px;
+        }
+
+        .cover > * {
+            -webkit-transition: margin-top 0.3s ease;
+        }
+
+        p {
+            margin: 0;
+            padding: 0;
+        }
+
+        div#progress {
+            width: 98%;
+            height: 1em;
+            -webkit-border-radius: 5px;
+            background-color: #d2e9f7;
+            overflow: hidden;
+            margin: 5px auto 0;
+        }
+
+        div#bar {
+            width: 0%;
+            height: 1em;
+            -webkit-border-radius: 5px;
+            background: -webkit-linear-gradient(top, #208bf7 0%,#72b8ff 36%,#60abf8 65%,#208bf7 100%); /* Chrome10+,Safari5.1+ */
+		}
+
+
+        input.settings {
+            display: inline;
+            width: auto;
+        }
+
+        div#message {
+            margin: 5px auto 0;
+            width: 98%;
+            box-sizing: border-box;
+            -webkit-border-radius: 5px;
+            border: 1px inset #d2e9f7;
+            background-color: #f3fafe;
+        }
+
+        div#generalsettings {
+            height: auto;
+            width: 98%;
+            box-sizing: border-box;
+            padding-bottom: 0.2em;
+            border: dotted #3499da;
+            border-width: 0px 1px 1px 1px;
+            -webkit-border-radius: 0 0 5px 5px;
+        }
+
+        span#settingsbutton {
+            margin-right: 1em;
+            display: inline-block;
+            float: right;
+            padding: 0.2em;
+            font-size: 1em;
+            line-height: 1em;
+            background-color: #3499da;
+            color: white;
+            border-radius: 0 0 4px 4px;
+            border-color: #d2e9f7;
+        }
+
+    </style>
+
+    <script src="popup.js"></script>
+</head>
+
+<body>
+    <div id="buttons">
+        <button id="analyze" disabled>Begin analysis</button>
+        <button id="abort" disabled>Abort analysis</button>
+        <div id="progress"><div id="bar"></div></div>
+        <div class="cover" id="quotedisplaysettings">
+            <p>Quoted At Least <input type="number" name="tresholdval" id="threshold" value="3" min="1"> time(s).</p>
+            <select id="ordertype">
+                <option>Chronological</option>
+                <option>Top quoted first</option>
+            </select>
+            <p>List posts by user(s):</p>
+            <input type="text" name="followuserval" id="followuser" value="hesido" title="Username, separated by commas">
+            <button id="show" disabled>Show posts</button>
+            <button id="clearcache" disabled>Clear Thread Cache</button>
+        </div>
+        <div id="message"> Waiting for thread information </div>
+        <div class="cover" id="generalsettings">
+            <p title="Put analysed pages in cache for fast loading of posts and fast navigation"><input class="settings" type="checkbox" name="cachepageset" id="cachepage" value="cachepages">Cache analyzed pages</p>
+            <p title="Use analysis information to populate pages during normal thread navigation"><input class="settings" type="checkbox" name="populatepage" id="populpage" value="populpages">Populate normal thread views</p>
+        </div>
+        <span id="settingsbutton">Quick settings</span>
+
+    </div>
+</body>
+
+</html>

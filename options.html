@@ -1,0 +1,58 @@
+<!doctype html>
+
+<html>
+<head>
+    <title>NeoGAF Thread Summarizer Options</title>
+    <style>
+        label, button, div {
+            display: block;
+            margin-bottom: 5px;
+        }
+        .hidden {
+        display: none;
+        }
+		
+		.disabled {
+		color: gray;
+		}
+    </style>
+</head>
+<body>
+
+
+    <label>
+        <input class="settings" type="checkbox" name="cachepageset" id="cachepage">Cache analyzed pages
+    </label>
+    <label id="usecachepages_label">
+        <input class="settings" type="checkbox" name="usecachepageset" id="usecachepages">Use cached pages for analysis
+    </label>
+    <label>
+        <input class="settings" type="checkbox" name="dopagemodset" id="dopagemod">Auto-populate normal thread pages using analysed data
+    </label>
+    <label>
+        <input class="settings" type="checkbox" name="onpageactionsset" id="onpageactions">Use on page actions
+    </label>
+    <p>
+        Remove page navigation caches for a thread after:<br>
+        <select id="pagecachetimelimit">
+            <option value="15">15 minutes</option>
+            <option value="45">45 minutes</option>
+            <option value="120">2 hours</option>
+        </select>
+        of browsing inactivity on that thread.
+    </p>
+    <p>
+        Remove analysis result caches of a thread after:<br>
+        <select id="analysiscachetimelimit">
+            <option value="15">15 minutes</option>
+            <option value="45">45 minutes</option>
+            <option value="120">2 hours</option>
+        </select>
+        of result display inactivity on that thread.
+    </p>
+    <div id="status">Status: Retrieving Settings</div>
+    <button id="save" disabled>Save</button>
+
+    <script src="options.js"></script>
+</body>
+</html>
