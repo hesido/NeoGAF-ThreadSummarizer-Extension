@@ -221,7 +221,7 @@ function threadInfo() {
 	lastPageExtract,
 	lastPage,
 	domainPrefix = "www.",
-	baseURIRex = /(.*\/).*$/, //use matchedurl and replace domainPrefix with baseURI capture
+	//baseURIRex = /(.*\/).*$/, //use matchedurl and replace domainPrefix with baseURI capture
 	pageRex = /(?:\?|&)page=(\d+)/;
 
 	if (!(matchedURL = document.URL.match(/https?:\/\/(.*\.?)neogaf\.com\/.*showthread.php\?.*/)))
@@ -421,8 +421,8 @@ function cacheLink(e) {
 
 function clearNavigation() {
 	var toClear = document.querySelectorAll("ul.pagenav a.gaf_enhance_extension_cached"),
-	anchor,
-	titleSpan = null;
+	anchor;
+	//titleSpan = null;
 
 	for (var i = 0; anchor = toClear.item(i); i++) {
 		anchor.classList.remove("gaf_enhance_extension_cached");

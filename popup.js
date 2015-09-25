@@ -4,9 +4,9 @@
 document.addEventListener('DOMContentLoaded', function () {
 	var activeTab = false,
 	settings,
-	threadExtract,
+	//threadExtract,
 	threadId,
-	thread,
+	//thread,
 	threadURL,
 	threadCurPage,
 	threadLastPage,
@@ -22,8 +22,8 @@ document.addEventListener('DOMContentLoaded', function () {
 	cacheset = document.getElementById("cachepage"),
 	poplpage = document.getElementById("populpage"),
 	follwusr = document.getElementById("followuser"),
-	progress = document.getElementById("progress"),
-	progrbar = document.getElementById("bar"),
+	//progress = document.getElementById("progress"),
+	//progrbar = document.getElementById("bar"),
 	setbuttn = document.getElementById("settingsbutton"),
 	settndiv = document.getElementById("generalsettings"),
 	baranima = new $fleXanim.prepare();
