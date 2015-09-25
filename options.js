@@ -25,7 +25,7 @@ settings = {
 function save_options() {
 	if (!settings) return;
 	settings = {
-		settingsVersion: 1.1,
+		settingsVersion: settings.settingsVersion,
 		cachepages : cacheset.checked,
 		usecacheforanalysis : usecachesetting, //this setting will not be directly tied to the on-screen checked status.
 		pagecachetimelimit : cachelim.value || settings.pagecachetimelimit,
