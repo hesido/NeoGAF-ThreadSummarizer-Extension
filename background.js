@@ -565,7 +565,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 				request.inPagePostCounts["page" + partialInfo[1]] = ++pageCount;
 				return [partialInfo[0], partialInfo[1], partialInfo[2], restInfo[2] || false]; //may later add the followed user boolean as the last array item.
 			};
-			return false;
+			return null;
 		}).filter(function (postInfo) {
 			return postInfo
 		}); //this filters out the ones that matcher can't find info for.
