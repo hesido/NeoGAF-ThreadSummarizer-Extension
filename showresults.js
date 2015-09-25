@@ -25,7 +25,7 @@
 // OR
 //better handling of errors cache is removed but requests are made from tabs 
 
-//tp do: Populated pages should update with updated analysis
+//to do: Populated pages should update with updated analysis
 //to do: Completely unify first displayJob, recursed displayJob, and populated displayJobs to use the same code path.
 //to do: fragment error handling could be done better;
 //to do: proper representation of recursion (too many recursions will make the content very narrow)
