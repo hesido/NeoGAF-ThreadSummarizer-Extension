@@ -50,7 +50,7 @@ threadId, // this is set by threadInfo() on request from popup.js and in popstat
 // mainDisplayJob = null,
 threadTitle,
 MAX_SIMULTANEOUS_POST_LOADS = 8, //variables that can be transferred to options page are capitalized.
-MIN_QUOTE_TRESHOLD = 2,
+//MIN_QUOTE_TRESHOLD = 2,
 MIN_WAIT_BEFORE_APPEND = 40, //milliseconds to wait for the next post load before appending it to page.
 CACHE_PAGES = false, //will be set to true if background page does a "pushCachedPageList"
 allowedConnectionPool = MAX_SIMULTANEOUS_POST_LOADS,
@@ -127,7 +127,7 @@ function triage(request) {
 		showResults(request);
 
 	if (request.action == "listQuotingPosts") {
-		displayJobs[request.quotedId + "_job"] = new setupDisplay(request);
+		displayJobs[request.quotedId + "_job"] = new SetupDisplay(request);
 		displayJobs[request.quotedId + "_job"].begin(); //maybe we need to stop using begin() and have it auto-initiate;
 	};
 
@@ -361,7 +361,7 @@ function refreshPage() {
 
 	displayJobs = {}; //zap display jobs - previously not needed as normal pages weren't populated by the extension.
 
-	refreshAnim = new loadingAnim("#gaf_enhance_extension_refreshcache")
+	refreshAnim = new LoadingAnim("#gaf_enhance_extension_refreshcache")
 	// refreshAnim = new $fleXanim.prepare();
 
 	// refreshAnim.setAnimation({
@@ -473,7 +473,7 @@ function showResults(request) {
 		initAnim();
 
 		displayJobs = {}; //zap previous jobs // this may later have to be solved in an elegant way allowing for collapse state preserving browser history events.
-		displayJobs["maindisplayjob"] = new setupDisplay(request);
+		displayJobs["maindisplayjob"] = new SetupDisplay(request);
 		displayJobs["maindisplayjob"].begin();
 		// mainDisplayJob.begin();
 
@@ -482,7 +482,7 @@ function showResults(request) {
 
 function initAnim() {
 	if (loadAnim) return;
-	loadAnim = new $fleXanim.prepare();
+	loadAnim = new $fleXanim.Prepare();
 	loadAnim.setAnimation({
 		template: "backgroundColor:RGB(##,##,##)",
 		startVal: [73, 130, 174],
@@ -495,9 +495,9 @@ function initAnim() {
 	}).loop().clearAnim();
 }
 
-function loadingAnim(selector) {
+function LoadingAnim(selector) {
 	var appendAfter = document.querySelector(selector);
-	if (!appendAfter) return false;
+	if (!appendAfter) return;
 	var	appendPoint = appendAfter.nextElementSibling || false;
 	this.span = document.createElement("span"),
 	this.span.classList.add("gaf_enhance_extension_loading");
@@ -505,7 +505,7 @@ function loadingAnim(selector) {
 	else appendAfter.parentNode.appendChild(this.span);
 };
 
-loadingAnim.prototype = {
+LoadingAnim.prototype = {
 	remove:function() {
 		if(!this.span) return false; //for cases when selector fails.
 		this.span.parentNode.removeChild(this.span);
@@ -513,7 +513,7 @@ loadingAnim.prototype = {
 	}
 };
 
-function setupDisplay(request) {
+function SetupDisplay(request) {
 	// var dataSource = request.quotedInfo || false,
 	var threshold = parseInt(request.threshold) || 1;
 
@@ -600,7 +600,7 @@ function setupDisplay(request) {
 	};
 };
 
-setupDisplay.prototype = {
+SetupDisplay.prototype = {
 
 	begin : function () {
 		//		loadAnim.init(this.loadAnimElmId); //make sure we reset to the first animation key as this may be called multiple times for the same reference.
@@ -902,7 +902,7 @@ function collapsePosts() {
 	//we now have to check whether a parent exists, due to auto-populated quoted listings not having a parent. May not be necessary after unification of code paths between auto-populated and on demand listing
 	if (displayJobs[displayJobs[jobId].parentJobId]) displayJobs[displayJobs[jobId].parentJobId].childJobList = displayJobs[displayJobs[jobId].parentJobId].childJobList.filter(function (jobIdItem) {
 		return (jobIdItem !== jobId)
-	}); // remove from parent child job listdis
+	}); // remove from parent child job lists
 	nullJob(jobId); //recursively zap child job lists.
 
 };
@@ -955,13 +955,13 @@ function collapsePosts() {
 	//fleXanim v1.1 beta 5 //minimal animation library by hesido.com
 	var $fleXanim = {
 		aeT : {},
-		prepare : function () {
+		Prepare : function () {
 			this.aeL = {};
 			this.aQ = []
 		}
 	};
 
-	$fleXanim.prepare.prototype = {
+	$fleXanim.Prepare.prototype = {
 		setAnimation : function (s) {
 			if (!s.cachE)
 				s.cachE = {

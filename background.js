@@ -3,7 +3,7 @@
 var threadData = {},
 threadCachedPages = {},
 settings = {
-	settingsVersion: 1.1,
+	settingsVersion: 1.2,
 	minimumCompatibleSettingsVersion: 1.0,
 	threshold: 3,
 	ordertype: 0,
@@ -13,7 +13,8 @@ settings = {
 	pagecachetimelimit: 15, //in minutes
 	analysiscachetimelimit: 15, // in minutes
 	populatepages: true,
-	onpageactions: true
+	onpageactions: true,
+	autorefreshevery: 1 //in minutes
 }; //set defaults first without waiting for the local storage callback just in case
 
 chrome.storage.sync.get(settings, function (savedSettings) {
@@ -39,10 +40,12 @@ chrome.alarms.onAlarm.addListener(function (alarm) {
 	if (info[0] == "pageCacheRemove")
 		thread.removePageCaches();
 	if (info[0] == "analysisCacheRemove")
-		threadData[info[1]] = new threadSetup("Ready for analysis", info[1]);
+		threadData[info[1]] = new ThreadSetup("Ready for analysis", info[1]);
+	if (info[0] == "refreshlastpage")
+		thread.refreshLastPage();
 });
 
-function threadSetup(status, threadId) {
+function ThreadSetup(status, threadId) {
 	this.status = status;
 	this.quotedList = {}; //quotedList[postId] = [page_number,post_count,times_quoted,"quoter_post_id:quoter_post_count"]
 	this.postsInfo = "";
@@ -50,7 +53,7 @@ function threadSetup(status, threadId) {
 	// this.cachedPageList = ",";
 	threadCachedPages[threadId] = threadCachedPages[threadId] || {
 		lastCachedPage: false
-	}; //making it ready from moving
+	}; //making it ready for moving
 	//stores downloaded pages in the form threadCachedPages[threadId]{cachedPageList, [page1], [page2]}
 	//downloaded times in the threadCachedPages[threadId]{[pagetime1], [pagetime2]} for download time etc.
 	//this.pageCaches = threadCachedPages[threadId]; //this is just a reference
@@ -70,8 +73,14 @@ function threadSetup(status, threadId) {
 	this.threadTitle = "";
 };
 
-threadSetup.prototype = {
+ThreadSetup.prototype = {
 	tolerance: 0, //abort at first error
+	refreshLastPage: function() {
+		if (this.status !== "Analysis in progress" && this.lastPage && this.baseURL !== "") {
+			this.loadURL(this.baseURL + "&page=" + this.lastPage,true);
+			console.log("refreshed " + this.baseURL + " " + this.lastPage);
+		};
+	},
 	removePageCaches: function () {
 		threadCachedPages[this.threadId] = null;
 		delete threadCachedPages[this.threadId];
@@ -80,11 +89,12 @@ threadSetup.prototype = {
 		if (!threadCachedPages[this.threadId])
 			threadCachedPages[this.threadId] = {
 				lastCachedPage: false,
-				baseURL: this.baseURL
+//				baseURL: this.baseURL
 			};
 		var cacheHolder = threadCachedPages[this.threadId],
 		time = new Date();
 		cacheHolder.lastCachedPage = cacheHolder.lastCachedPage || pageNo;
+		cacheHolder.baseURL = this.baseURL;
 		if (pageNo > cacheHolder.lastCachedPage)
 			cacheHolder.lastCachedPage = pageNo;
 
@@ -111,7 +121,7 @@ threadSetup.prototype = {
 		var cacheHolder = threadCachedPages[this.threadId]
 		return (cacheHolder && cacheHolder["page" + pageNo]) || false;
 	},
-	loadURL: function (url) {
+	loadURL: function (url, autoRefresh) {
 		var threadRex = /((https?:\/\/.*\.?neogaf\.com)\/.*)showthread.php\?.*/,
 		curPage,
 		pageNoRex = /(?:\?|&)page=(\d+)/,
@@ -125,7 +135,7 @@ threadSetup.prototype = {
 		} else {
 			this.handleError({
 				page: url,
-				type: "load"
+				nametype: "load"
 			});
 			return false;
 		};
@@ -136,7 +146,7 @@ threadSetup.prototype = {
 				targetTab: this.activeTabId,
 				message: "Analysis interrupted"
 			});
-			threadData[this.threadId] = new threadSetup("Aborted analysis", this.threadId);
+			threadData[this.threadId] = new ThreadSetup("Aborted analysis", this.threadId);
 			return;
 		};
 
@@ -164,14 +174,15 @@ threadSetup.prototype = {
 
 		this.loadPage({
 			pageNo: curPage,
-			URI: matchedURL
+			URI: matchedURL,
+			autoRefresh: autoRefresh
 		});
 
 	},
 
 	loadPage: function (details) {
 		var url = this.baseURL + "&page=" + details.pageNo;
-
+		this.lastPage = (details.pageNo > this.lastPage) ? details.pageNo : this.lastPage;
 		try {
 			var r = new XMLHttpRequest();
 			r.open("GET", url, true);
@@ -179,7 +190,7 @@ threadSetup.prototype = {
 			r.onerror = (function () {
 				this.handleError({
 					page: url,
-					type: "load"
+					nametype: "load"
 				});
 			}).bind(this);
 			r.onload = (function () {
@@ -188,19 +199,19 @@ threadSetup.prototype = {
 				if (settings.cachepages)
 					this.addPageToCache(details.pageNo, r.response, details.tabId || false);
 				if (details.URI)
-					this.processPage(parsed, url, details.pageNo, details.URI[1], details.URI[2]); //only process if called from loadURL
+					this.processPage(parsed, url, details.pageNo, details.URI[1], details.URI[2],details.autoRefresh); //only process if called from loadURL
 			}).bind(this);
 			r.send(null);
 		} catch (e) {
 			this.handleError({
 				page: url,
-				type: "load"
+				nametype: "load"
 			});
 		};
 
 	},
 
-	processPage: function (page, url, pageNo, baseURI, rootURI) {
+	processPage: function (page, url, pageNo, baseURI, rootURI, autoRefresh) {
 		if (this.abort) {
 			chrome.runtime.sendMessage(null, {
 				action: "popupUIcommand_error",
@@ -208,7 +219,7 @@ threadSetup.prototype = {
 				message: "Analysis interrupted"
 			});
 
-			threadData[this.threadId] = new threadSetup("Aborted analysis", this.threadId);
+			threadData[this.threadId] = new ThreadSetup("Aborted analysis", this.threadId);
 			return;
 		};
 
@@ -253,7 +264,7 @@ threadSetup.prototype = {
 					quotingPostId = (inspectElm.id && inspectElm.id.match(postIdRex)) ? inspectElm.id.match(postIdRex)[1] : false;
 				};
 
-				if (quotingPostId && ((!this.quotedList[postNo][3]) || this.quotedList[postNo][3].indexOf(quotingPostId + ",") == -1)) {
+				if (quotingPostId && ((!this.quotedList[postNo][3]) || this.quotedList[postNo][3].indexOf(quotingPostId + ",") == -1)) { //this line prevents re-addition of quoting post id so re-analysed pages do not contribute multiple times for the same post.
 					postCountAnchor = page.getElementById("postcount" + quotingPostId);
 					//quoterInfo = quotingPostId + ":" + pageNo + ":" + ((postCountAnchor != null && postCountAnchor.name) ? postCountAnchor.name : 0) + ","; changed to: (will be as simple as just quoting post id as all list request will come back to background.js)
 					quoterInfo = quotingPostId + ",";
@@ -292,11 +303,12 @@ threadSetup.prototype = {
 
 
 		if (nextPageURL)
-			this.loadURL(nextPageURL);
+			this.loadURL(nextPageURL,autoRefresh);
 		else {
-			chrome.alarms.create("analysisCacheRemove:" + this.threadId, {
-				delayInMinutes: settings.analysiscachetimelimit * 1
-			})
+			if (!autoRefresh)
+				chrome.alarms.create("analysisCacheRemove:" + this.threadId, {
+					delayInMinutes: settings.analysiscachetimelimit * 0.2
+				});
 			this.status = "Analysis completed";
 			chrome.runtime.sendMessage(null, {
 				action: "popupUIcommand_analyzeComplete",
@@ -306,6 +318,11 @@ threadSetup.prototype = {
 				chrome.tabs.sendMessage(this.activeTabId, {
 					action: "analyzeComplete",
 					populatePage: settings.populatepages
+				});
+			};
+			if (settings.autorefreshevery) {
+				chrome.alarms.create("refreshlastpage:" + this.threadId, {
+					delayInMinutes: settings.autorefreshevery * 0.2
 				});
 			};
 		};
@@ -318,7 +335,7 @@ threadSetup.prototype = {
 		}
 
 		if (!(this.tolerance--) || err.fatalError) {
-			this.status = (err.type == "DOM") ? "Aborted: bad page structure" : "Aborted: load errors";
+			this.status = (err.nametype == "DOM") ? "Aborted: bad page structure" : "Aborted: load errors";
 			chrome.runtime.sendMessage(null, {
 				action: "popupUIcommand_error",
 				message: this.status,
@@ -410,7 +427,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 
 	if (request.action == "clearThreadData" && thread) {
 		if (thread && thread.status !== "Analysis in progress") {
-			threadData[thread.threadId] = new threadSetup("Ready for analysis", thread.threadId);
+			threadData[thread.threadId] = new ThreadSetup("Ready for analysis", thread.threadId);
 			thread = null;
 			// we now treat the page caches separately from analysis cache
 			// if (settings.cachepages)
@@ -464,7 +481,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 			return; //safety valve;
 
 		if (!thread) {
-			threadData[request.threadId] = new threadSetup("Analysis in progress", request.threadId);
+			threadData[request.threadId] = new ThreadSetup("Analysis in progress", request.threadId);
 			thread = threadData[request.threadId];
 		};
 		thread.baseURL = request.url;

@@ -22,11 +22,12 @@ document.addEventListener('DOMContentLoaded', function () {
 	cacheset = document.getElementById("cachepage"),
 	poplpage = document.getElementById("populpage"),
 	follwusr = document.getElementById("followuser"),
+	autorefr = document.getElementById("autorefreshlastpage"),
 	//progress = document.getElementById("progress"),
 	//progrbar = document.getElementById("bar"),
 	setbuttn = document.getElementById("settingsbutton"),
 	settndiv = document.getElementById("generalsettings"),
-	baranima = new $fleXanim.prepare();
+	baranima = new $fleXanim.Prepare();
 
 	baranima.setTemplate({
 		template : "width:##%",
@@ -67,11 +68,13 @@ document.addEventListener('DOMContentLoaded', function () {
 			follwusr.value = settings.followuser;
 			cacheset.checked = settings.cachepages;
 			poplpage.checked = settings.populatepages;
+			autorefr.value = settings.autorefreshevery;
 			inputvl1.addEventListener("change", submitSetting);
 			ordersel.addEventListener("change", submitSetting);
 			follwusr.addEventListener("change", submitSetting);
 			cacheset.addEventListener("change", submitSetting);
 			poplpage.addEventListener("change", submitSetting);
+			autorefr.addEventListener("change", submitSetting);
 		};
 
 		request.targetTab = request.targetTab || (sender.tab && sender.tab.id) || false;
@@ -216,7 +219,8 @@ document.addEventListener('DOMContentLoaded', function () {
 		settings.ordertype = ordersel.selectedIndex;
 		settings.followuser = follwusr.value;
 		settings.cachepages = cacheset.checked;
-		settings.populatepages = populpage.checked;
+		settings.populatepages = poplpage.checked;
+		settings.autorefreshevery = autorefr.value;
 		chrome.runtime.sendMessage(null, {
 			action : "receiveSettings",
 			settings : settings,
@@ -239,12 +243,12 @@ document.addEventListener('DOMContentLoaded', function () {
 //fleXanim v1.1 beta 5 //minimal animation library by hesido.com
 var $fleXanim = {
 	aeT : {},
-	prepare : function () {
+	Prepare : function () {
 		this.aeL = {};
 		this.aQ = []
 	}
 };
-$fleXanim.prepare.prototype = {
+$fleXanim.Prepare.prototype = {
 	setAnimation: function (s) {
 		if (!s.cachE)
 			s.cachE = {
