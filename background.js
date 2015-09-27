@@ -71,6 +71,8 @@ function ThreadSetup(status, threadId) {
 	//this.cachedPages = {}; //stores downloaded pages in the form thread.cachedPages[page1], [page2] etc.
 	this.threadId = threadId;
 	this.threadTitle = "";
+	this.lastPostCount = 0;
+	this.lastKnownPostCount = 0;
 };
 
 ThreadSetup.prototype = {
@@ -131,7 +133,7 @@ ThreadSetup.prototype = {
 
 		if (matchedURL = url.match(threadRex)) {
 			curPage = matchedURL[0].match(pageNoRex);
-			curPage = (curPage && curPage[1]) || 1;
+			curPage = (curPage && parseInt(curPage[1])) || 1;
 		} else {
 			this.handleError({
 				page: url,
@@ -252,6 +254,10 @@ ThreadSetup.prototype = {
 				//quoteAnchors = page.querySelectorAll("#post" + pcExtract[1] + " p.cita>a");
 			};
 		};
+		
+		this.lastPostCount = Math.max(this.lastPostCount,parseInt(pcExtract[2])); //doing this once at the end.
+		
+		console.log(this.lastPostCount);
 
 		for (var i = 0, inspectElm, postNo, quotingPostId, postCountAnchor; inspectElm = quoteAnchors[i]; i++) {
 			quotingPostId = false;
@@ -274,8 +280,8 @@ ThreadSetup.prototype = {
 						this.quotedList[postNo][0] = (matcher) ? matcher[1] : 0;
 						this.quotedList[postNo][1] = (matcher) ? matcher[2] : 0;
 					};
-					this.quotedList[postNo][2] = (this.quotedList[postNo][2]) ? ++this.quotedList[postNo][2] : 1; //dev note - to do: this could be streamlined, as this portion was moved from a separate function. This function now can work directly on the entire data set instead of just the page's data, so this merge should be made redundant.
-					this.quotedList[postNo][3] = (this.quotedList[postNo][3]) ? this.quotedList[postNo][3] + quoterInfo : quoterInfo; //dev note - to do: this could be streamlined, as this portion was moved from a separate function. This function now can work directly on the entire data set instead of just the page's data, so this merge should be made redundant.
+					this.quotedList[postNo][2] = (this.quotedList[postNo][2]) ? ++this.quotedList[postNo][2] : 1;
+					this.quotedList[postNo][3] = (this.quotedList[postNo][3]) ? this.quotedList[postNo][3] + quoterInfo : quoterInfo; 
 
 				};
 			};
@@ -307,7 +313,7 @@ ThreadSetup.prototype = {
 		else {
 			if (!autoRefresh)
 				chrome.alarms.create("analysisCacheRemove:" + this.threadId, {
-					delayInMinutes: settings.analysiscachetimelimit * 0.2
+					delayInMinutes: settings.analysiscachetimelimit * 1
 				});
 			this.status = "Analysis completed";
 			chrome.runtime.sendMessage(null, {
@@ -322,7 +328,7 @@ ThreadSetup.prototype = {
 			};
 			if (settings.autorefreshevery) {
 				chrome.alarms.create("refreshlastpage:" + this.threadId, {
-					delayInMinutes: settings.autorefreshevery * 0.2
+					delayInMinutes: settings.autorefreshevery * 0.5 //the default is * 1, if different, this is for debugging.
 				});
 			};
 		};

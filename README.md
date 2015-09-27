@@ -3,8 +3,11 @@
 This Branch is WIP, not supposed to work and is volatile. Please download the master branch for your own work.
 
 Current known problems with the branch:
-The progress bar is now broken, probably due to the thread.lastPage being handled differently.
 The intended live thread functionality is not yet in place. -WIP-
+
+ToDo:
+Page navigation list should be handled exclusively by the extension for the live thread view to work in a meaningful way.
+
 
 This extension provides features that aid browsing of NeoGAF forums.
 
