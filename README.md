@@ -1,6 +1,7 @@
 # NeoGAF-ThreadSummarizer-Extension
 
 This Branch is WIP, not supposed to work and is volatile. Please download the master branch for your own work.
+Cloned on Work Computer
 
 Current known problems with the branch:
 The intended live thread functionality is not yet in place. -WIP-
