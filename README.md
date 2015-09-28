@@ -8,7 +8,7 @@ The intended live thread functionality is not yet in place. -WIP-
 
 ToDo:
 Page navigation list should be handled exclusively by the extension for the live thread view to work in a meaningful way.
-
+New posts detection should be suppressed after standard browser navigation to that page.
 
 This extension provides features that aid browsing of NeoGAF forums.
 

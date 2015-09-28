@@ -53,7 +53,7 @@ function ThreadSetup(status, threadId) {
 	// this.cachedPageList = ",";
 	threadCachedPages[threadId] = threadCachedPages[threadId] || {
 		lastCachedPage: false
-	}; //making it ready for moving
+	};
 	//stores downloaded pages in the form threadCachedPages[threadId]{cachedPageList, [page1], [page2]}
 	//downloaded times in the threadCachedPages[threadId]{[pagetime1], [pagetime2]} for download time etc.
 	//this.pageCaches = threadCachedPages[threadId]; //this is just a reference
@@ -71,8 +71,8 @@ function ThreadSetup(status, threadId) {
 	//this.cachedPages = {}; //stores downloaded pages in the form thread.cachedPages[page1], [page2] etc.
 	this.threadId = threadId;
 	this.threadTitle = "";
-	this.lastPostCount = 0;
-	this.lastKnownPostCount = 0;
+	this.lastPostCount = 0; //this holds the max post count on processed pages, either from analysis or auto-refresh
+	this.lastKnownPostCount = 0; //this holds the max post count after analysis is completed and/or user navigates to the last page
 };
 
 ThreadSetup.prototype = {
@@ -80,7 +80,10 @@ ThreadSetup.prototype = {
 	refreshLastPage: function() {
 		if (this.status !== "Analysis in progress" && this.lastPage && this.baseURL !== "") {
 			this.loadURL(this.baseURL + "&page=" + this.lastPage,true);
-			console.log("refreshed " + this.baseURL + " " + this.lastPage);
+			if (this.lastPostCount - this.lastKnownPostCount) {
+				console.log("There are %d new posts in thread %s", this.lastPostCount - this.lastKnownPostCount, this.threadId);
+			}
+			//console.log("refreshed " + this.baseURL + " " + this.lastPage);
 		};
 	},
 	removePageCaches: function () {
@@ -119,7 +122,7 @@ ThreadSetup.prototype = {
 			delayInMinutes: settings.pagecachetimelimit * 1
 		});
 	},
-	readPageCache: function (pageNo) { //dev note: it may not really be necessary to have this as a method
+	readPageCache: function (pageNo) {
 		var cacheHolder = threadCachedPages[this.threadId]
 		return (cacheHolder && cacheHolder["page" + pageNo]) || false;
 	},
@@ -257,7 +260,7 @@ ThreadSetup.prototype = {
 		
 		this.lastPostCount = Math.max(this.lastPostCount,parseInt(pcExtract[2])); //doing this once at the end.
 		
-		console.log(this.lastPostCount);
+		//console.log(this.lastPostCount);
 
 		for (var i = 0, inspectElm, postNo, quotingPostId, postCountAnchor; inspectElm = quoteAnchors[i]; i++) {
 			quotingPostId = false;
@@ -311,10 +314,12 @@ ThreadSetup.prototype = {
 		if (nextPageURL)
 			this.loadURL(nextPageURL,autoRefresh);
 		else {
-			if (!autoRefresh)
+			if (!autoRefresh) {//see if this is called with auto refresh or a normal analysis.
 				chrome.alarms.create("analysisCacheRemove:" + this.threadId, {
 					delayInMinutes: settings.analysiscachetimelimit * 1
 				});
+				this.lastKnownPostCount = this.lastPostCount;
+				};
 			this.status = "Analysis completed";
 			chrome.runtime.sendMessage(null, {
 				action: "popupUIcommand_analyzeComplete",
@@ -469,6 +474,8 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 			});
 			return;
 		};
+				
+		if (parseInt(request.page) == cachedPointer.lastCachedPage && request.action == "requestPageForNavigation") thread.lastKnownPostCount = thread.lastPostCount;
 
 		chrome.alarms.create("pageCacheRemove:" + thread.threadId, {
 			delayInMinutes: settings.pagecachetimelimit * 1
