@@ -67,12 +67,13 @@ function ThreadSetup(status, threadId) {
 	this.baseURL = threadCachedPages[threadId].baseURL || ""; //stores base url //anything that is re-set from cache objects are things that cache related thread methods require when running
 	//this is needed because analysis caches and page caches can be deleted separately
 
-	this.lastPage = false; //stores last page number
+	this.lastPage = 0; //stores last page number
 	//this.cachedPages = {}; //stores downloaded pages in the form thread.cachedPages[page1], [page2] etc.
 	this.threadId = threadId;
 	this.threadTitle = "";
 	this.lastPostCount = 0; //this holds the max post count on processed pages, either from analysis or auto-refresh
 	this.lastKnownPostCount = 0; //this holds the max post count after analysis is completed and/or user navigates to the last page
+	this.newPostCount = 0; //this holds the new post count, used so that there are not multiple notifications for the same number of new posts.
 };
 
 ThreadSetup.prototype = {
@@ -80,8 +81,15 @@ ThreadSetup.prototype = {
 	refreshLastPage: function() {
 		if (this.status !== "Analysis in progress" && this.lastPage && this.baseURL !== "") {
 			this.loadURL(this.baseURL + "&page=" + this.lastPage,true);
-			if (this.lastPostCount - this.lastKnownPostCount) {
+			var newPostCount = this.lastPostCount - this.lastKnownPostCount;
+			if (newPostCount && newPostCount != this.newPostCount) {
+				this.newPostCount = newPostCount;
 				console.log("There are %d new posts in thread %s", this.lastPostCount - this.lastKnownPostCount, this.threadId);
+				chrome.tabs.sendMessage(this.activeTabId, {
+					action: "newPostsArrived",
+					noOfPosts: newPostCount
+				});
+				//this.lastKnownPostCount = this.lastPostCount;
 			}
 			//console.log("refreshed " + this.baseURL + " " + this.lastPage);
 		};
@@ -475,7 +483,8 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 			return;
 		};
 				
-		if (parseInt(request.page) == cachedPointer.lastCachedPage && request.action == "requestPageForNavigation") thread.lastKnownPostCount = thread.lastPostCount;
+		if (parseInt(request.page) == cachedPointer.lastCachedPage && request.action == "requestPageForNavigation")
+			thread.lastKnownPostCount = thread.lastPostCount;
 
 		chrome.alarms.create("pageCacheRemove:" + thread.threadId, {
 			delayInMinutes: settings.pagecachetimelimit * 1

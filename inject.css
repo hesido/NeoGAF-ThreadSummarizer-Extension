@@ -16,6 +16,16 @@ a.gaf_enhance_extension_cached {
     transition: background 0.2s;
 }
 
+.pagenav > li.gaf_enhance_extension_newpost {
+    margin-right: 1em;
+    color: black;
+}
+
+.pagenav > li.gaf_enhance_extension_newpost > a {
+    background-color: #1b639a;
+    color: #fff;
+}
+
 #gaf_enhance_extension_threadinfo {
 padding: 2px 10px 2px 12px;
 background-color: #01518e;

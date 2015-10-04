@@ -33,7 +33,7 @@
 
 //to do: auto refresh pages visited to reflect any changes (may not be possible in a transparent manner without re-downloading page)
 
-//to do: button to delete all thread analyse cache
+//to do: dedicated button to delete all thread analyse cache
 //to do: cached page limit setting with dynamic caching
 //to do: display a basic graph about quoted posts
 //to do: do reply tracking on a post by post basis instead of inside a thread using contextual menu. May be used to track replies to specific posts in post search results.
@@ -97,6 +97,9 @@ function setup() {
 
 	postContainer = document.getElementById("posts");
 	docReady = true;
+	
+	//for debugging
+	//newPostNotify(3);
 };
 
 function triage(request) {
@@ -121,7 +124,8 @@ function triage(request) {
 
 	populatePage = populatePage || request.populatePage || false;
 
-	if (request.action == "analyzeComplete" && !pagePopulated && populatePage) doPagePopulate();
+	if (request.action == "analyzeComplete" && !pagePopulated && populatePage)
+		doPagePopulate();
 
 	if (request.action == "displayResults")
 		showResults(request);
@@ -159,8 +163,38 @@ function triage(request) {
 
 	if (request.action == "clearNavigation")
 		clearNavigation();
-
+	if (request.action == "newPostsArrived")
+		newPostNotify(request.noOfPosts);
 };
+
+function newPostNotify(newPostCount) {
+	
+	var newPostNotes = document.querySelectorAll("li.gaf_enhance_extenstion_newpost a");
+	if(newPostNotes.length == 0) {
+		console.log(newPostNotes.length)
+		insertNewPostNote();
+		newPostNotes = document.querySelectorAll("li.gaf_enhance_extension_newpost a");
+	}
+
+	for (var i = 0, span; span = newPostNotes[i]; i++) {
+		span.textContent = newPostCount + " new post" + ((newPostCount > 1)? "s" : "");
+	}
+
+}
+
+function insertNewPostNote() {
+	var insertTargets = document.querySelectorAll("ul.pagenav");	
+	if (insertTargets.length == 0) return;
+	var toInsert = document.createElement("li");
+	toInsert.appendChild(document.createElement("a"));
+	toInsert.classList.add("gaf_enhance_extension_newpost");
+	
+	for (var i = 0, insertionPoint; insertionPoint = insertTargets[i]; i++) {
+		console.log(insertionPoint);
+		
+		insertionPoint.insertBefore(toInsert.cloneNode(true),insertionPoint.firstElementChild)
+	}
+}
 
 function displayCachedPage(request) {
 
