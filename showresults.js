@@ -99,7 +99,9 @@ function setup() {
 	docReady = true;
 	
 	//for debugging
-	//newPostNotify(3);
+	newPostNotify(3);
+	newPostNotify(4);
+	newPostNotify(5);
 };
 
 function triage(request) {
@@ -169,7 +171,7 @@ function triage(request) {
 
 function newPostNotify(newPostCount) {
 	
-	var newPostNotes = document.querySelectorAll("li.gaf_enhance_extenstion_newpost a");
+	var newPostNotes = document.querySelectorAll("li.gaf_enhance_extension_newpost a");
 	if(newPostNotes.length == 0) {
 		console.log(newPostNotes.length)
 		insertNewPostNote();
@@ -184,14 +186,13 @@ function newPostNotify(newPostCount) {
 
 function insertNewPostNote() {
 	var insertTargets = document.querySelectorAll("ul.pagenav");	
-	if (insertTargets.length == 0) return;
+	if (insertTargets.length == 0) return; //insertTargets[0] = document.querySelector("div.right");
+	//if (insertTargets[0] == null) return;
 	var toInsert = document.createElement("li");
 	toInsert.appendChild(document.createElement("a"));
 	toInsert.classList.add("gaf_enhance_extension_newpost");
 	
 	for (var i = 0, insertionPoint; insertionPoint = insertTargets[i]; i++) {
-		console.log(insertionPoint);
-		
 		insertionPoint.insertBefore(toInsert.cloneNode(true),insertionPoint.firstElementChild)
 	}
 }
