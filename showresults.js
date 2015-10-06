@@ -949,7 +949,9 @@ function addQuotedInfo(span, timesQuoted, dataString, popQuoted) {
 	anchor.classList.add("gaf_enhance_extension_lister");
 	if (popQuoted) anchor.href = "#post" + dataString; //careful with datastring structure change and / or unification of code path
 	anchor.addEventListener("click", (popQuoted) ? populatedQuoters : displayQuoters, false);
-	span.insertBefore(anchor, span.firstChild)
+	flashElement(anchor);
+	span.insertBefore(anchor, span.firstChild);
+	window.setTimeout(flashElement.bind(anchor),66);
 };
 
 function collapsePosts() {
