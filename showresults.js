@@ -99,9 +99,9 @@ function setup() {
 	docReady = true;
 	
 	//for debugging
-	newPostNotify(3);
-	newPostNotify(4);
-	newPostNotify(5);
+	// newPostNotify(3);
+	// newPostNotify(4);
+	// newPostNotify(5);
 };
 
 function triage(request) {
@@ -171,29 +171,54 @@ function triage(request) {
 
 function newPostNotify(newPostCount) {
 	
-	var newPostNotes = document.querySelectorAll("li.gaf_enhance_extension_newpost a");
+	var newPostNotes = document.querySelectorAll("a.gaf_enhance_extension_newpost");
 	if(newPostNotes.length == 0) {
 		console.log(newPostNotes.length)
 		insertNewPostNote();
-		newPostNotes = document.querySelectorAll("li.gaf_enhance_extension_newpost a");
+		newPostNotes = document.querySelectorAll("a.gaf_enhance_extension_newpost");
 	}
 
-	for (var i = 0, span; span = newPostNotes[i]; i++) {
-		span.textContent = newPostCount + " new post" + ((newPostCount > 1)? "s" : "");
+	for (var i = 0, anch; anch = newPostNotes[i]; i++) {
+		flashElement(anch);
+		anch.textContent = newPostCount + " new post" + ((newPostCount > 1)? "s" : "");
+		window.setTimeout(flashElement.bind(anch),66);
 	}
+}
 
+function flashElement(elm){
+	if(elm) {
+		elm.classList.add("supressanim");
+		elm.classList.remove("active");
+		} else {
+	this.classList.remove("supressanim");
+    this.classList.add("active");
+		}
 }
 
 function insertNewPostNote() {
-	var insertTargets = document.querySelectorAll("ul.pagenav");	
-	if (insertTargets.length == 0) return; //insertTargets[0] = document.querySelector("div.right");
+	var insertTargets = document.querySelectorAll("ul.pagenav");
+	if (insertTargets.length == 0) {
+		var insertTargetParents = document.querySelectorAll("div.clearfix:not(.tcat)>div.right");
+		if(insertTargetParents.length == 0) return;
+		for (var i = 0, insertTargetParent; insertTargetParent = insertTargetParents[i]; i++) {
+			insertTargets[i] = document.createElement("ul");
+			insertTargets[i].classList.add("pagenav");
+			insertTargetParent.appendChild(insertTargets[i]);
+		}		
+	}; //insertTargets[0] = document.querySelector("div.right");
 	//if (insertTargets[0] == null) return;
 	var toInsert = document.createElement("li");
-	toInsert.appendChild(document.createElement("a"));
-	toInsert.classList.add("gaf_enhance_extension_newpost");
+	var anch = document.createElement("a");
+		anch.classList.add("gaf_enhance_extension_newpost");
+	toInsert.appendChild(anch);
+
+	//toInsert.classList.add("gaf_enhance_extension_newpost");
 	
 	for (var i = 0, insertionPoint; insertionPoint = insertTargets[i]; i++) {
-		insertionPoint.insertBefore(toInsert.cloneNode(true),insertionPoint.firstElementChild)
+		if(insertionPoint.firstElementChild!==null)
+			insertionPoint.insertBefore(toInsert.cloneNode(true),insertionPoint.firstElementChild)
+		else
+			insertionPoint.appendChild(toInsert.cloneNode(true));
 	}
 }
 

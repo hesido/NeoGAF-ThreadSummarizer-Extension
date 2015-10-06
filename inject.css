@@ -16,14 +16,24 @@ a.gaf_enhance_extension_cached {
     transition: background 0.2s;
 }
 
-.pagenav > li.gaf_enhance_extension_newpost {
-    margin-right: 1em;
-    color: black;
-}
-
-.pagenav > li.gaf_enhance_extension_newpost > a {
+.pagenav > li > a.gaf_enhance_extension_newpost { /* long selector required for specificity */
     background-color: #1b639a;
     color: #fff;
+    visibility: hidden;
+    opacity: 0;
+    -webkit-transform: scale(1.3,1.3);
+    margin-right: 0.6em;
+    transition: opacity 0.2s, visibility 0.2s, transform 0.3s;
+}
+
+.pagenav > li > a.gaf_enhance_extension_newpost.active {
+    visibility: visible;
+    opacity: 1;
+    -webkit-transform: scale(1.0,1.0);
+}
+
+.pagenav > li > a.gaf_enhance_extension_newpost.supressanim {
+    -webkit-transition: none;
 }
 
 #gaf_enhance_extension_threadinfo {
