@@ -14,7 +14,7 @@ settings = {
 	analysiscachetimelimit: 15, // in minutes
 	populatepages: true,
 	onpageactions: true,
-	refreshevery: 1 //in minutes
+	autorefreshevery: 1 //in minutes
 }; //set defaults first without waiting for the local storage callback just in case
 
 chrome.storage.sync.get(settings, function (savedSettings) {
@@ -357,9 +357,9 @@ ThreadSetup.prototype = {
 					populatePage: settings.populatepages
 				});
 			};
-			if (settings.refreshevery) {
+			if (settings.autorefreshevery) {
 				chrome.alarms.create("refreshlastpage:" + this.threadId, {
-					delayInMinutes: settings.refreshevery * 0.5 //the default is * 1, if different, this is for debugging.
+					delayInMinutes: settings.autorefreshevery * 0.5 //the default is * 1, if different, this is for debugging.
 				});
 			};
 		};
