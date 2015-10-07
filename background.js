@@ -14,7 +14,7 @@ settings = {
 	analysiscachetimelimit: 15, // in minutes
 	populatepages: true,
 	onpageactions: true,
-	autorefreshevery: 1 //in minutes
+	refreshevery: 1 //in minutes
 }; //set defaults first without waiting for the local storage callback just in case
 
 chrome.storage.sync.get(settings, function (savedSettings) {
@@ -72,8 +72,9 @@ function ThreadSetup(status, threadId) {
 	this.threadId = threadId;
 	this.threadTitle = "";
 	this.lastPostCount = 0; //this holds the max post count on processed pages, either from analysis or auto-refresh
-	this.lastKnownPostCount = 0; //this holds the max post count after analysis is completed and/or user navigates to the last page
+	this.lastDisplayedPostCount = 0; //this holds the max post count after analysis is completed and/or user navigates to the last page
 	this.newPostCount = 0; //this holds the new post count, used so that there are not multiple notifications for the same number of new posts.
+	this.firstUnread = 0; //this holds the first unread post Id
 };
 
 ThreadSetup.prototype = {
@@ -81,15 +82,16 @@ ThreadSetup.prototype = {
 	refreshLastPage: function() {
 		if (this.status !== "Analysis in progress" && this.lastPage && this.baseURL !== "") {
 			this.loadURL(this.baseURL + "&page=" + this.lastPage,true);
-			var newPostCount = this.lastPostCount - this.lastKnownPostCount;
+			var newPostCount = this.lastPostCount - this.lastDisplayedPostCount;
 			if (newPostCount && newPostCount != this.newPostCount) {
 				this.newPostCount = newPostCount;
-				console.log("There are %d new posts in thread %s", this.lastPostCount - this.lastKnownPostCount, this.threadId);
+				console.log("There are %d new posts in thread %s, first unread post no is %s", this.lastPostCount - this.lastDisplayedPostCount, this.threadId, this.firstUnread);
 				chrome.tabs.sendMessage(this.activeTabId, {
 					action: "newPostsArrived",
 					noOfPosts: newPostCount
 				});
-				//this.lastKnownPostCount = this.lastPostCount;
+			if(!newPostCount) this.firstUnread = 0;
+				//this.lastDisplayedPostCount = this.lastPostCount;
 			}
 			//console.log("refreshed " + this.baseURL + " " + this.lastPage);
 		};
@@ -114,7 +116,8 @@ ThreadSetup.prototype = {
 		this.lastCachedPage = cacheHolder.lastCachedPage;
 
 		cacheHolder["page" + pageNo] = htmlstring;
-		cacheHolder["pagetime" + pageNo] = time.getTime();
+		cacheHolder["pageinfo" + pageNo] = cacheHolder["pageinfo" + pageNo] || []; 
+		cacheHolder["pageinfo" + pageNo][0] = time.getTime();
 		cacheHolder["cachedPageList"] = cacheHolder["cachedPageList"] || ",";
 
 		if (tabId)
@@ -134,7 +137,7 @@ ThreadSetup.prototype = {
 		var cacheHolder = threadCachedPages[this.threadId]
 		return (cacheHolder && cacheHolder["page" + pageNo]) || false;
 	},
-	loadURL: function (url, autoRefresh) {
+	loadURL: function (url, refresh, responseTabId) {
 		var threadRex = /((https?:\/\/.*\.?neogaf\.com)\/.*)showthread.php\?.*/,
 		curPage,
 		pageNoRex = /(?:\?|&)page=(\d+)/,
@@ -178,7 +181,7 @@ ThreadSetup.prototype = {
 			targetTab: this.activeTabId
 		});
 
-		if (useCache && (cachedPage = this.readPageCache(curPage))) {
+		if (!refresh && useCache && (cachedPage = this.readPageCache(curPage))) {
 			var parser = new DOMParser(),
 			parsed = parser.parseFromString(cachedPage, "text/html");
 			this.processPage(parsed, url, curPage, matchedURL[1], matchedURL[2])
@@ -188,7 +191,8 @@ ThreadSetup.prototype = {
 		this.loadPage({
 			pageNo: curPage,
 			URI: matchedURL,
-			autoRefresh: autoRefresh
+			refresh: refresh,
+			responseTabId: responseTabId
 		});
 
 	},
@@ -210,9 +214,9 @@ ThreadSetup.prototype = {
 				var parser = new DOMParser(),
 				parsed = parser.parseFromString(r.response, "text/html");
 				if (settings.cachepages)
-					this.addPageToCache(details.pageNo, r.response, details.tabId || false);
-				if (details.URI)
-					this.processPage(parsed, url, details.pageNo, details.URI[1], details.URI[2],details.autoRefresh); //only process if called from loadURL
+					this.addPageToCache(details.pageNo, r.response, details.responseTabId || false);
+				//if (details.URI)  //now always called with details.URI
+				this.processPage(parsed, url, details.pageNo, details.URI[1], details.URI[2], details.refresh, details.responseTabId || false); //only process if called from loadURL
 			}).bind(this);
 			r.send(null);
 		} catch (e) {
@@ -224,7 +228,7 @@ ThreadSetup.prototype = {
 
 	},
 
-	processPage: function (page, url, pageNo, baseURI, rootURI, autoRefresh) {
+	processPage: function (page, url, pageNo, baseURI, rootURI, refresh, calledForResponse) {
 		if (this.abort) {
 			chrome.runtime.sendMessage(null, {
 				action: "popupUIcommand_error",
@@ -251,24 +255,29 @@ ThreadSetup.prototype = {
 		quoterInfo,
 		usernameHolder,
 		matcher,
-		pageLastPost,
+		pageFirstPostId = 0,
+		pageLastPostCount,
+		pcAnchor,
 		username;
 
 		//if (this.analyzedURL.indexOf("%%" + url + "%%") == -1)
 		//	this.analyzedURL += url + "%%";
+		if(pcAnchor = postCTAnchors[0]) pcExtract = (strTester = pcAnchor.getAttribute('href')) && strTester.match(postCtRex);
+		if(pcExtract) pageFirstPostId = pcExtract[1];
 
-		for (var i = 0, pcAnchor, pcExtract; pcAnchor = postCTAnchors[i]; i++) {
+		for (var i = 0, pcExtract; pcAnchor = postCTAnchors[i]; i++) {
 			pcExtract = (strTester = pcAnchor.getAttribute('href')) && strTester.match(postCtRex);
 			if (pcExtract && this.postsInfo.indexOf(pcExtract[1] + ":") == -1) {
 				usernameHolder = page.querySelector("#postmenu_" + pcExtract[1] + ">a");
 				username = (usernameHolder != null && (strTester = usernameHolder.getAttribute('href')) && strTester.indexOf("member.php?u=") > -1) ? usernameHolder.textContent : "%noinfo%";
 				this.postsInfo += pcExtract[1] + ":" + pageNo + ":" + pcExtract[2] + ":" + username + ",";
+				if(refresh) this.firstUnread = this.firstUnread || pcExtract[1];
 				//quoteAnchors = page.querySelectorAll("#post" + pcExtract[1] + " p.cita>a");
 			};
 		};
 		
-		pageLastPost = parseInt(pcExtract[2])
-		this.lastPostCount = Math.max(this.lastPostCount, pageLastPost); //doing this once at the end.
+		pageLastPostCount = parseInt(pcExtract[2])
+		this.lastPostCount = Math.max(this.lastPostCount, pageLastPostCount); //doing this once at the end.
 		
 		//console.log(this.lastPostCount);
 
@@ -315,37 +324,42 @@ ThreadSetup.prototype = {
 		
 		if (settings.cachepages && this.activeTabId) //dev note: up until this point this.activeTabId is already set but this may change in the future, that's why I'm keeping this extra check.
 			var	cachedPointer = threadCachedPages[this.threadId] || false;
-			if(cachedPointer) cachedPointer["lastpostonpage"+pageNo] = pageLastPost;
+			if(cachedPointer) {
+				cachedPointer["pageinfo"+pageNo][1] = pageFirstPostId;
+				cachedPointer["pageinfo"+pageNo][2] = pageLastPostCount;
+				}
 			chrome.tabs.sendMessage(this.activeTabId, {
 				action: "pageCachedNotify",
 				pageNo: pageNo,
 				cachedPageList: (cachedPointer && cachedPointer["cachedPageList"]) || false  //there's no way threadCachedPages for this thread id is not there at this point, checking just in case.
 			});
 
+		if(refresh && calledForResponse)
+		this.lastDisplayedPostCount = Math.max(this.lastDisplayedPostCount, pageLastPostCount);
 
-		if (nextPageURL)
-			this.loadURL(nextPageURL,autoRefresh);
+		if (nextPageURL && !calledForResponse)
+			this.loadURL(nextPageURL,refresh);
 		else {
-			if (!autoRefresh) {//see if this is called with auto refresh or a normal analysis.
+			if (!refresh) {//see if this is called for refresh or a normal analysis.
 				chrome.alarms.create("analysisCacheRemove:" + this.threadId, {
 					delayInMinutes: settings.analysiscachetimelimit * 1
 				});
-				this.lastKnownPostCount = this.lastPostCount;
+				this.lastDisplayedPostCount = this.lastPostCount;
 				};
 			this.status = "Analysis completed";
 			chrome.runtime.sendMessage(null, {
 				action: "popupUIcommand_analyzeComplete",
 				targetTab: this.activeTabId
 			});
-			if (this.activeTabId) {
+			if (this.activeTabId && !refresh) {
 				chrome.tabs.sendMessage(this.activeTabId, {
 					action: "analyzeComplete",
 					populatePage: settings.populatepages
 				});
 			};
-			if (settings.autorefreshevery) {
+			if (settings.refreshevery) {
 				chrome.alarms.create("refreshlastpage:" + this.threadId, {
-					delayInMinutes: settings.autorefreshevery * 0.5 //the default is * 1, if different, this is for debugging.
+					delayInMinutes: settings.refreshevery * 0.5 //the default is * 1, if different, this is for debugging.
 				});
 			};
 		};
@@ -473,10 +487,11 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 			});
 			return;
 		};
-		thread.loadPage({
-			pageNo: request.pageNo,
-			tabId: request.tabId
-		})
+		thread.loadURL(thread.baseURL + "&page=" + request.pageNo, true, request.tabId);
+		// thread.loadPage({
+		// 	pageNo: request.pageNo,
+		// 	tabId: request.tabId
+		// })
 		return;
 	};
 	if (request.action == "requestPageForNavigation" || request.action == "requestPageForPostLoad") {
@@ -487,10 +502,11 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 			return;
 		};
 		
-		thread.lastKnownPostCount = Math.max(thread.lastKnownPostCount,(cachedPointer["lastpostonpage"+request.page]||1));
+		if(request.action == "requestPageForNavigation")
+			thread.lastDisplayedPostCount = Math.max(thread.lastDisplayedPostCount,(cachedPointer["pageinfo"+request.page][2]||1)); //set last displayed post count only on page view
 		
 		// if (parseInt(request.page) == cachedPointer.lastCachedPage && request.action == "requestPageForNavigation")
-		// 	thread.lastKnownPostCount = thread.lastPostCount;
+		// 	thread.lastDisplayedPostCount = thread.lastPostCount;
 
 		chrome.alarms.create("pageCacheRemove:" + thread.threadId, {
 			delayInMinutes: settings.pagecachetimelimit * 1
@@ -498,7 +514,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 		sendResponse({
 			action: "cachedPageResponse",
 			pageHTMLstring: cachedPointer["page" + request.page],
-			cacheTime: cachedPointer["pagetime" + request.page],
+			cacheTime: cachedPointer["pageinfo" + request.page][0],
 			cachedPageList: cachedPointer["cachedPageList"],
 		});
 		return;

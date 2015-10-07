@@ -165,6 +165,7 @@ function triage(request) {
 
 	if (request.action == "clearNavigation")
 		clearNavigation();
+		
 	if (request.action == "newPostsArrived")
 		newPostNotify(request.noOfPosts);
 };
@@ -351,6 +352,8 @@ function threadInfo() {
 };
 
 function doPagePopulate() {
+	if(pagePopulated) return; //safety valve
+	pagePopulated = true; //currently updates to existing populated links are not possible.
 	var postCTAnchors = document.querySelectorAll("a[id^='postcount']"),
 		rexer = /showpost.php\?p=(\d+)&postcount=/,
 		postIdList = [];
@@ -376,7 +379,6 @@ function doPagePopulate() {
 				addQuotedInfo(span, quotedInfo[1], quotedInfo[0], true);
 			};
 		});
-		pagePopulated = true; //currently updates to existing populated links are not possible.
 	});
 
 }
