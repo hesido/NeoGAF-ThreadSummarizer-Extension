@@ -27,9 +27,9 @@ chrome.storage.sync.get(settings, function (savedSettings) {
 
 chrome.webNavigation.onCommitted.addListener(inspectTab, {
 	url: [{
-		hostSuffix: 'neogaf.com'
-	}
-	]
+		hostSuffix: 'neogaf.com',
+		pathContains: "showthread.php"
+	}]
 });
 
 chrome.alarms.onAlarm.addListener(function (alarm) {
@@ -77,6 +77,7 @@ function ThreadSetup(status, threadId) {
 	this.firstUnread = 0; //this holds the first unread post Id
 };
 
+
 ThreadSetup.prototype = {
 	tolerance: 0, //abort at first error
 	refreshLastPage: function() {
@@ -116,7 +117,7 @@ ThreadSetup.prototype = {
 		this.lastCachedPage = cacheHolder.lastCachedPage;
 
 		cacheHolder["page" + pageNo] = htmlstring;
-		cacheHolder["pageinfo" + pageNo] = cacheHolder["pageinfo" + pageNo] || []; 
+		cacheHolder["pageinfo" + pageNo] = cacheHolder["pageinfo" + pageNo] || []; //[download time, first post on page id, last post count]
 		cacheHolder["pageinfo" + pageNo][0] = time.getTime();
 		cacheHolder["cachedPageList"] = cacheHolder["cachedPageList"] || ",";
 
@@ -124,7 +125,7 @@ ThreadSetup.prototype = {
 			chrome.tabs.sendMessage(tabId, {
 				action: "resreshPageResponse",
 				pageHTMLstring: cacheHolder["page" + pageNo],
-				cacheTime: cacheHolder["pagetime" + pageNo]
+				cacheTime: cacheHolder["pageinfo" + pageNo][0]
 			});
 
 		if (cacheHolder["cachedPageList"].indexOf("," + pageNo + ",") == -1)
@@ -136,6 +137,12 @@ ThreadSetup.prototype = {
 	readPageCache: function (pageNo) {
 		var cacheHolder = threadCachedPages[this.threadId]
 		return (cacheHolder && cacheHolder["page" + pageNo]) || false;
+	},
+	getPageNo: function(postId) {
+			var matcher,
+			idFind = new RegExp(postId + ":(\\d*):\\d*:.*?,", "i");
+			matcher = (matcher = this.postsInfo.match(idFind)) && matcher[1];
+			return (matcher || 0);
 	},
 	loadURL: function (url, refresh, responseTabId) {
 		var threadRex = /((https?:\/\/.*\.?neogaf\.com)\/.*)showthread.php\?.*/,
@@ -258,14 +265,15 @@ ThreadSetup.prototype = {
 		pageFirstPostId = 0,
 		pageLastPostCount,
 		pcAnchor,
+		pcExtract,
 		username;
 
 		//if (this.analyzedURL.indexOf("%%" + url + "%%") == -1)
 		//	this.analyzedURL += url + "%%";
-		if(pcAnchor = postCTAnchors[0]) pcExtract = (strTester = pcAnchor.getAttribute('href')) && strTester.match(postCtRex);
-		if(pcExtract) pageFirstPostId = pcExtract[1];
+		if (pcAnchor = postCTAnchors[0]) pcExtract = (strTester = pcAnchor.getAttribute('href')) && strTester.match(postCtRex);
+		if (pcExtract) pageFirstPostId = pcExtract[1];
 
-		for (var i = 0, pcExtract; pcAnchor = postCTAnchors[i]; i++) {
+		for (var i = 0; pcAnchor = postCTAnchors[i]; i++) {
 			pcExtract = (strTester = pcAnchor.getAttribute('href')) && strTester.match(postCtRex);
 			if (pcExtract && this.postsInfo.indexOf(pcExtract[1] + ":") == -1) {
 				usernameHolder = page.querySelector("#postmenu_" + pcExtract[1] + ">a");
@@ -325,8 +333,8 @@ ThreadSetup.prototype = {
 		if (settings.cachepages && this.activeTabId) //dev note: up until this point this.activeTabId is already set but this may change in the future, that's why I'm keeping this extra check.
 			var	cachedPointer = threadCachedPages[this.threadId] || false;
 			if(cachedPointer) {
-				cachedPointer["pageinfo"+pageNo][1] = pageFirstPostId;
-				cachedPointer["pageinfo"+pageNo][2] = pageLastPostCount;
+				cachedPointer["pageinfo" + pageNo][1] = pageFirstPostId;
+				cachedPointer["pageinfo" + pageNo][2] = pageLastPostCount;
 				}
 			chrome.tabs.sendMessage(this.activeTabId, {
 				action: "pageCachedNotify",
@@ -386,8 +394,6 @@ ThreadSetup.prototype = {
 }
 
 function inspectTab(event) {
-	var threadExtract;
-	if (threadExtract = event.url.match(/https?:\/\/.*\.?neogaf\.com\/.*showthread.php\?.*/))
 		chrome.pageAction.show(event.tabId);
 };
 
@@ -413,6 +419,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 		var quotedInfo = [];
 		request.postIdList.forEach(function (postId) { if (thread.quotedList[postId]) quotedInfo.push([postId, thread.quotedList[postId][2]]) });
 		sendResponse(quotedInfo);
+		return;
 	}
 
 	if (request.action == "receiveSettings") {
@@ -504,6 +511,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 		
 		if(request.action == "requestPageForNavigation")
 			thread.lastDisplayedPostCount = Math.max(thread.lastDisplayedPostCount,(cachedPointer["pageinfo"+request.page][2]||1)); //set last displayed post count only on page view
+//			thread.firstUnread = (thread.lastDisplayedCount == thread.lastPostCount) ? 0 : ;
 		
 		// if (parseInt(request.page) == cachedPointer.lastCachedPage && request.action == "requestPageForNavigation")
 		// 	thread.lastDisplayedPostCount = thread.lastPostCount;
@@ -617,7 +625,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 		request.ordertype = settings.ordertype;
 		request.postList = quotedPost[3].split(',').map(function (postId) {
 			var matcher,
-			idFind = new RegExp(postId + ":\\d*:\\d*:.*?,", "gi"); //dev note: grabbing also that user name to mark followed users later on, make sure slice(0,-1)
+			idFind = new RegExp(postId + ":\\d*:\\d*:.*?,", "gi"); //dev note: grabbing also that user name to mark followed users
 
 			if (matcher = (postId != "") && thread.postsInfo.match(idFind)) {
 				var partialInfo = matcher[0].split(':'),
