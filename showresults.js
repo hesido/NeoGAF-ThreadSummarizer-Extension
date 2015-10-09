@@ -97,11 +97,7 @@ function setup() {
 
 	postContainer = document.getElementById("posts");
 	docReady = true;
-	
-	//for debugging
-	// newPostNotify(3);
-	// newPostNotify(4);
-	// newPostNotify(5);
+
 };
 
 function triage(request) {
@@ -174,7 +170,6 @@ function newPostNotify(newPostCount) {
 	
 	var newPostNotes = document.querySelectorAll("a.gaf_enhance_extension_newpost");
 	if(newPostNotes.length == 0) {
-		console.log(newPostNotes.length)
 		insertNewPostNote();
 		newPostNotes = document.querySelectorAll("a.gaf_enhance_extension_newpost");
 	}
@@ -208,18 +203,21 @@ function insertNewPostNote() {
 		}		
 	}; //insertTargets[0] = document.querySelector("div.right");
 	//if (insertTargets[0] == null) return;
-	var toInsert = document.createElement("li");
-	var anch = document.createElement("a");
-		anch.classList.add("gaf_enhance_extension_newpost");
-	toInsert.appendChild(anch);
+	var toInsert, anch;
 
 	//toInsert.classList.add("gaf_enhance_extension_newpost");
 	
 	for (var i = 0, insertionPoint; insertionPoint = insertTargets[i]; i++) {
+		toInsert = document.createElement("li");
+		anch = document.createElement("a");
+		anch.classList.add("gaf_enhance_extension_newpost");
+		anch.href = "#"
+		toInsert.appendChild(anch);
+		anch.addEventListener("click", cacheLink, false);	
 		if(insertionPoint.firstElementChild!==null)
-			insertionPoint.insertBefore(toInsert.cloneNode(true),insertionPoint.firstElementChild)
+			insertionPoint.insertBefore(toInsert,insertionPoint.firstElementChild)
 		else
-			insertionPoint.appendChild(toInsert.cloneNode(true));
+			insertionPoint.appendChild(toInsert);
 	}
 }
 
@@ -270,7 +268,6 @@ function displayCachedPage(request) {
 	pagePopulated = false;
 	threadInfo();
 	resetNavigation();
-
 };
 
 function threadInfo() {
@@ -408,7 +405,6 @@ function setCachedLink(cachedPageNo) {
 			anchor.setAttribute("data-gafenhancepageno", pageNo);
 			anchor.classList.add("gaf_enhance_extension_cached");
 			anchor.addEventListener("click", cacheLink, false);
-
 		}; //dev note: some animation would be nice.
 	};
 
@@ -456,7 +452,7 @@ function refreshPage() {
 };
 
 function cacheLink(e) {
-	var clickedPage = this.getAttribute("data-gafenhancepageno"),
+	var clickedPage = this.getAttribute("data-gafenhancepageno") || false,
 	href = this.href;
 
 	displayJobs = {}; //zap previous jobs // this may later have to be solved in an elegant way allowing for collapse state preserving browser history events.
@@ -471,9 +467,9 @@ function cacheLink(e) {
 			return; //add document url change here.
 		}
 		//dev - populate page: this will get an answer as to whether the page should be populated.
-
+		href = response.pageURL;
 		history.pushState({
-			gafEnhancePopState_page : clickedPage
+			gafEnhancePopState_page : response.page
 		}, null, href);
 		displayCachedPage(response);
 	});
@@ -1012,9 +1008,9 @@ function collapsePosts() {
 			quotedId: "post" + postId ,
 			parentJobId: "populateJob" //no such parent job exists, currently.
 		});
-		
+
 		return;
-	}
+	};
 
 	//fleXanim v1.1 beta 5 //minimal animation library by hesido.com
 	var $fleXanim = {
