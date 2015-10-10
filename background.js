@@ -79,6 +79,7 @@ function ThreadSetup(status, threadId) {
 ThreadSetup.prototype = {
 	tolerance: 0, //abort at first error
 	refreshLastPage: function() {
+		console.log("refreshing %s, last page %d, base url %s", this.threadId, this.lastPage, this.baseURL);
 		if (this.status !== "Analysis in progress" && this.lastPage && this.baseURL !== "") {
 			this.loadURL(this.baseURL + "&page=" + this.lastPage,true); //the following code needs to work async. will move to inside the process page.
 		};
@@ -319,16 +320,16 @@ ThreadSetup.prototype = {
 			this.loadURL(nextPageURL,refresh);
 		else {
 			this.status = "Analysis completed";
+			if (settings.autorefreshevery) {
+				chrome.alarms.create("refreshlastpage:" + this.threadId, {
+					delayInMinutes: settings.autorefreshevery * 0.5 //the default is * 1, if different, this is for debugging.
+				});
+			};
 			if (!refresh) {//see if this is called for refresh or a normal analysis.
 				chrome.alarms.create("analysisCacheRemove:" + this.threadId, {
 					delayInMinutes: settings.analysiscachetimelimit * 1
 				});
 				this.lastDisplayedPostCount = this.lastPostCount;
-				if (settings.autorefreshevery) {
-					chrome.alarms.create("refreshlastpage:" + this.threadId, {
-						delayInMinutes: settings.autorefreshevery * 0.5 //the default is * 1, if different, this is for debugging.
-					});
-				};
 				if (this.activeTabId) {
 					chrome.tabs.sendMessage(this.activeTabId, {
 						action: "analyzeComplete",
@@ -478,33 +479,33 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 			return;
 		};
 		thread.loadURL(thread.baseURL + "&page=" + request.pageNo, true, request.tabId);
-		// thread.loadPage({
-		// 	pageNo: request.pageNo,
-		// 	tabId: request.tabId
-		// })
 		return;
 	};
+	
 	if (request.action == "requestPageForNavigation" || request.action == "requestPageForPostLoad") {
-		var postInfo = [0 , request.page || 0]
-		if(!request.page) { //asking for first unread, page not specified.
-			postInfo = thread.getPostInfo(thread.lastDisplayedPostCount + 1);
-		}
-		postInfo[1] = postInfo[1] || thread.lastPage; //if still not set, set to last page.
-		
-		if (!thread || !cachedPointer || !cachedPointer["page" + request.page]) {
-			sendResponse({
-				error: true
-			});
+
+		if (!thread || !cachedPointer) {
+			sendResponse({error: true});
 			return;
-		};
+			};
+
+		var reqPage, postId = 0;
+		
+		if(!request.page) { //asking for first unread, page not specified.
+			var postInfo = thread.getPostInfo(thread.lastDisplayedPostCount + 1);
+			postId = postInfo[0];
+			reqPage = postInfo[1];
+		} else reqPage = parseInt(request.page);
+
+		reqPage = reqPage || (thread && thread.lastPage) || 0;
+		
+		if (!cachedPointer["page" + reqPage]) {
+			sendResponse({error: true});
+			return;
+			};
 		
 		if(request.action == "requestPageForNavigation")
-			//var unreadPostPage = thread.getPageNo(thread.firstUnread);
-			var reqPage = parseInt(request.page);
 			thread.lastDisplayedPostCount = Math.max(thread.lastDisplayedPostCount,(cachedPointer["pageinfo"+reqPage][2]||1)); //set last displayed post count only on page view
-			// thread.firstUnread = (reqPage == cachedPointer.lastCachedPage) ? 0 :
-			// 	(unreadPostPage < reqPage) ? cachedPointer["pageinfo"+reqPage][1] :
-			// 		(unreadPostPage == reqPage) ? cachedPointer["pageinfo"+(reqPage + 1)][1] : 0;
 
 		chrome.alarms.create("pageCacheRemove:" + thread.threadId, {
 			delayInMinutes: settings.pagecachetimelimit * 1
@@ -515,8 +516,8 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 			pageURL: cachedPointer["pageinfo" + reqPage][0],
 			cacheTime: cachedPointer["pageinfo" + reqPage][1],
 			cachedPageList: cachedPointer["cachedPageList"],
-			postId: postInfo[0],
-			pageNo: postInfo[1]
+			postId: postId,
+			pageNo: reqPage
 		});
 		return;
 	};
