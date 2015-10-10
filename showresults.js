@@ -101,7 +101,6 @@ function setup() {
 };
 
 function triage(request) {
-	cachedPageList = (request.cachedPageList) ? request.cachedPageList : cachedPageList;
 
 	if (request.action == "pageInfoAnalyse") {
 		if (docReady)
@@ -131,14 +130,6 @@ function triage(request) {
 	if (request.action == "listQuotingPosts") {
 		displayJobs[request.quotedId + "_job"] = new SetupDisplay(request);
 		displayJobs[request.quotedId + "_job"].begin(); //maybe we need to stop using begin() and have it auto-initiate;
-	};
-
-	if (request.action == "pushCachedPageList") {
-		//cachedPageList = request.cachedPageList;
-		if (!CACHE_PAGES)
-			window.addEventListener('popstate', handleHistory);
-		CACHE_PAGES = true;
-		resetNavigation();
 	};
 
 	if (request.action == "pageCachedNotify") {
@@ -268,6 +259,7 @@ function displayCachedPage(request) {
 	pagePopulated = false;
 	threadInfo();
 	resetNavigation();
+	if(request.postId) window.location.hash = "post"+request.postId;
 };
 
 function threadInfo() {
@@ -314,6 +306,8 @@ function threadInfo() {
 		};
 		lastPage = Math.max(curPage, lastPage);
 	};
+	
+	lastPage = parseInt(lastPage);
 
 	if (!threadId) {
 		chrome.runtime.sendMessage(null, {
@@ -337,6 +331,14 @@ function threadInfo() {
 		//dev - populate page: this will get an answer as to whether the page should be populated.
 		populatePage = response.populatePage;
 		if (!pagePopulated && populatePage) doPagePopulate();
+		if (response.cachedPageList) {
+			cachedPageList = response.cachedPageList;
+			//cachedPageList = request.cachedPageList;
+			if (!CACHE_PAGES)
+				window.addEventListener('popstate', handleHistory);
+			CACHE_PAGES = true;
+			resetNavigation();
+		}
 		return;
 	});
 
@@ -390,7 +392,7 @@ function resetNavigation() {
 }
 
 function setCachedLink(cachedPageNo) {
-	var anchors = document.querySelectorAll("ul.pagenav a"),
+	var anchors = document.querySelectorAll("ul.pagenav a:not(.gaf_enhance_extension_newpost)"),
 	anchor,
 	pageNo,
 	pageExtract,
@@ -420,21 +422,6 @@ function refreshPage() {
 	displayJobs = {}; //zap display jobs - previously not needed as normal pages weren't populated by the extension.
 
 	refreshAnim = new LoadingAnim("#gaf_enhance_extension_refreshcache")
-	// refreshAnim = new $fleXanim.prepare();
-
-	// refreshAnim.setAnimation({
-		// template : "color:RGB(##,##,##)",
-		// startVal : [255, 255, 255],
-		// endVal : [170, 170, 210],
-		// frames : 16
-	// }).setAnimation({
-		// template : "color:RGB(##,##,##)",
-		// endVal : [255, 255, 255],
-		// frames : 16
-	// }).loop().clearAnim(); //clear anim is added to remove reference to animated object
-
-	// refreshAnim.init("gaf_enhance_extension_refreshcache");
-	// refreshAnim.animate("gaf_enhance_extension_refreshcache");
 
 	chrome.runtime.sendMessage(null, {
 		action : "refreshPageCache",

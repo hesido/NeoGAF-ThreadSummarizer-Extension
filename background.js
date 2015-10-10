@@ -423,23 +423,22 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 	};
 
 	if (request.action == "popupUIcommand_setThreadInfo") { //this is also received by the popup to set current / last pages
-
-		if (thread)
-			thread.activeTabId = request.tabId;
-
-		if (thread && settings.cachepages && cachedPointer)
-			chrome.tabs.sendMessage(request.tabId, {
-				action: "pushCachedPageList",
-				cachedPageList: cachedPointer["cachedPageList"]
-			});
-
+			
 		chrome.runtime.sendMessage(null, {
 			action: "popupUIcommand_displayThreadStatus",
 			targetTab: request.tabId,
 			status: (thread && thread.status) || "Ready for analysis"
 		});
+		
+		if(!thread) return;
+		
+		thread.activeTabId = request.tabId;
 
-		sendResponse({ populatePage: settings.populatepages && thread && thread.status == "Analysis completed" });
+		sendResponse({
+			populatePage: settings.populatepages && thread.status == "Analysis completed",
+			threadStatus : thread.status,
+			cachedPageList: settings.cachepages && cachedPointer && cachedPointer["cachedPageList"]
+			});
 
 		return;
 	};
@@ -491,10 +490,12 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 
 		var reqPage, postId = 0;
 		
+		console.log(request.page);
 		if(!request.page) { //asking for first unread, page not specified.
 			var postInfo = thread.getPostInfo(thread.lastDisplayedPostCount + 1);
 			postId = postInfo[0];
-			reqPage = postInfo[1];
+			reqPage = postInfo[1] || thread.lastCachedPage;
+			console.log("I'm there.. %o", postInfo);
 		} else reqPage = parseInt(request.page);
 
 		reqPage = reqPage || (thread && thread.lastPage) || 0;
@@ -503,7 +504,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 			sendResponse({error: true});
 			return;
 			};
-		
+
 		if(request.action == "requestPageForNavigation")
 			thread.lastDisplayedPostCount = Math.max(thread.lastDisplayedPostCount,(cachedPointer["pageinfo"+reqPage][2]||1)); //set last displayed post count only on page view
 
