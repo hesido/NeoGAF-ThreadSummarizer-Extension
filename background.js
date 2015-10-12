@@ -488,23 +488,24 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 			return;
 			};
 
-		var reqPage, postId = 0;
-		
-		console.log(request.page);
+		var reqPage, postId = 0, firstUnread = (thread.lastDisplayedPostCount) ? thread.lastDisplayedPostCount + 1 : 0;
+
 		if(!request.page) { //asking for first unread, page not specified.
-			var postInfo = thread.getPostInfo(thread.lastDisplayedPostCount + 1);
+			var postInfo = thread.getPostInfo(firstUnread);
 			postId = postInfo[0];
 			reqPage = postInfo[1] || thread.lastCachedPage;
-			console.log("I'm there.. %o", postInfo);
+			chrome.alarms.create("analysisCacheRemove:" + thread.threadId, { //if new page is clicked, keep analysis data. May later move new post related stuff to thread caches.
+				delayInMinutes: settings.analysiscachetimelimit * 1
+			});
 		} else reqPage = parseInt(request.page);
 
 		reqPage = reqPage || (thread && thread.lastPage) || 0;
-		
+
 		if (!cachedPointer["page" + reqPage]) {
 			sendResponse({error: true});
 			return;
 			};
-
+			
 		if(request.action == "requestPageForNavigation")
 			thread.lastDisplayedPostCount = Math.max(thread.lastDisplayedPostCount,(cachedPointer["pageinfo"+reqPage][2]||1)); //set last displayed post count only on page view
 
@@ -517,6 +518,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 			pageURL: cachedPointer["pageinfo" + reqPage][0],
 			cacheTime: cachedPointer["pageinfo" + reqPage][1],
 			cachedPageList: cachedPointer["cachedPageList"],
+			firstUnread : firstUnread, //first unread post count
 			postId: postId,
 			pageNo: reqPage
 		});
@@ -602,7 +604,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 		chrome.tabs.sendMessage(request.tabId, request);
 		return;
 	};
-
+""
 	if (request.action == "listQuotingPosts" && thread) {
 		chrome.alarms.create("analysisCacheRemove:" + thread.threadId, {
 			delayInMinutes: settings.analysiscachetimelimit * 1

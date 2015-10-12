@@ -98,6 +98,10 @@ function setup() {
 	postContainer = document.getElementById("posts");
 	docReady = true;
 
+//debug
+newPostNotify(111);
+window.setTimeout(function(){newPostNotify(112)},500)
+window.setTimeout(function(){newPostNotify(113)},1000)
 };
 
 function triage(request) {
@@ -133,6 +137,7 @@ function triage(request) {
 	};
 
 	if (request.action == "pageCachedNotify") {
+		cachedPageList = request.cachedPageList;
 		setCachedLink(request.pageNo);
 		if (!CACHE_PAGES)
 			window.addEventListener('popstate', handleHistory);
@@ -168,18 +173,19 @@ function newPostNotify(newPostCount) {
 	for (var i = 0, anch; anch = newPostNotes[i]; i++) {
 		flashElement(anch);
 		anch.textContent = newPostCount + " new post" + ((newPostCount > 1)? "s" : "");
-		window.setTimeout(flashElement.bind(anch),66);
 	}
 }
 
-function flashElement(elm){
-	if(elm) {
-		elm.classList.add("supressanim");
-		elm.classList.remove("active");
-		} else {
-	this.classList.remove("supressanim");
-    this.classList.add("active");
-		}
+function flashElement(elm) {
+	if (elm) {
+		elm.classList.add("g_e_e_flashready");
+		elm.classList.add("g_e_e_initial");
+		elm.classList.remove("g_e_e_active");
+		window.setTimeout(flashElement.bind(elm), 66);
+	} else {
+		this.classList.remove("g_e_e_initial");
+		this.classList.add("g_e_e_active");
+	}
 }
 
 function insertNewPostNote() {
@@ -259,7 +265,27 @@ function displayCachedPage(request) {
 	pagePopulated = false;
 	threadInfo();
 	resetNavigation();
-	if(request.postId) window.location.hash = "post"+request.postId;
+	if(request.postId) {
+		window.location.hash = "post"+request.postId;
+		if(request.firstUnread) {notifyUnreadCascade(request.firstUnread)};
+		}
+};
+
+function notifyUnreadCascade(postCount) {
+	var anchor = null,
+		nextAnchor;
+
+	if (postCount) {
+		anchor = document.querySelector("a[name='" + postCount + "']")
+	} else {
+		anchor = this;
+		postCount = (this.name && parseInt(this.name)) || -1
+		};
+
+	if (anchor) flashElement(anchor);
+	
+	if (nextAnchor = document.querySelector("a[name='" + (postCount + 1) + "']"))
+		window.setTimeout(notifyUnreadCascade.bind(nextAnchor), 300);
 };
 
 function threadInfo() {
@@ -465,14 +491,22 @@ function cacheLink(e) {
 };
 
 function clearNavigation() {
-	var toClear = document.querySelectorAll("ul.pagenav a.gaf_enhance_extension_cached"),
-	anchor;
+	var toClear = document.querySelectorAll("ul.pagenav a"),
+		anchor,
+		toRemove;
 	//titleSpan = null;
 
-	for (var i = 0; anchor = toClear.item(i); i++) {
+	for (var i = 0; anchor = toClear[i]; i++) {
 		anchor.classList.remove("gaf_enhance_extension_cached");
 		anchor.removeEventListener("click", cacheLink, false);
 	};
+	
+	toRemove = document.querySelectorAll("a.gaf_enhance_extension_newpost")
+	for (var i = 0; anchor = toRemove[i]; i++) {
+		anchor.parentNode.parentNode.removeChild(anchor.parentNode);
+	};
+	
+	anchor = null; //not sure if necessary, in case.
 	cachedPageList = ",";
 	parsedPages = {};
 };
@@ -936,7 +970,6 @@ function addQuotedInfo(span, timesQuoted, dataString, popQuoted) {
 	anchor.addEventListener("click", (popQuoted) ? populatedQuoters : displayQuoters, false);
 	flashElement(anchor);
 	span.insertBefore(anchor, span.firstChild);
-	window.setTimeout(flashElement.bind(anchor),66);
 };
 
 function collapsePosts() {
