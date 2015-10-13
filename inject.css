@@ -26,22 +26,33 @@ a.gaf_enhance_extension_lister {
     margin-right: 0.6em;
 }
 
+.g_e_e_initial, div.g_e_e_initial {
+    transition: none;
+}
+
+div.g_e_e_flashready {
+    visibility: visible;
+    opacity: 1;
+    -webkit-transform: translate(40px, 0px);
+    transition: transform 0.33s;    
+
+}
+
+div.g_e_e_active {
+     -webkit-transform: translate(0px, 0px);
+}
+
 .g_e_e_flashready {
     visibility: hidden;
     opacity: 0;
     -webkit-transform: scale(1.3,1.3);
-    transition: opacity 0.2s, visibility 0.2s, transform 0.3s;
-    
+    transition: opacity 0.2s, visibility 0.2s, transform 0.3s;    
 }
 
 .g_e_e_active {
     visibility: visible;
     opacity: 1;
     -webkit-transform: scale(1.0,1.0);
-}
-
-.g_e_e_supressanim {
-    transition: none;
 }
 
 #gaf_enhance_extension_threadinfo {

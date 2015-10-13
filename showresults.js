@@ -99,9 +99,10 @@ function setup() {
 	docReady = true;
 
 //debug
-newPostNotify(111);
-window.setTimeout(function(){newPostNotify(112)},500)
-window.setTimeout(function(){newPostNotify(113)},1000)
+// newPostNotify(111);
+// // window.setTimeout(function(){newPostNotify(112)},500);
+// // window.setTimeout(function(){newPostNotify(113)},1000);
+// notifyUnreadCascade(52);
 };
 
 function triage(request) {
@@ -282,10 +283,10 @@ function notifyUnreadCascade(postCount) {
 		postCount = (this.name && parseInt(this.name)) || -1
 		};
 
-	if (anchor) flashElement(anchor);
+	if (anchor) flashElement(anchor.parentNode.parentNode.parentNode.parentNode);
 	
 	if (nextAnchor = document.querySelector("a[name='" + (postCount + 1) + "']"))
-		window.setTimeout(notifyUnreadCascade.bind(nextAnchor), 300);
+		window.setTimeout(notifyUnreadCascade.bind(nextAnchor), 66);
 };
 
 function threadInfo() {
