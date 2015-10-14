@@ -79,7 +79,7 @@ function ThreadSetup(status, threadId) {
 ThreadSetup.prototype = {
 	tolerance: 0, //abort at first error
 	refreshLastPage: function() {
-		console.log("refreshing %s, last page %d, base url %s", this.threadId, this.lastPage, this.baseURL);
+//		console.log("refreshing %s, last page %d, base url %s", this.threadId, this.lastPage, this.baseURL);
 		if (this.status !== "Analysis in progress" && this.lastPage && this.baseURL !== "") {
 			this.loadURL(this.baseURL + "&page=" + this.lastPage,true); //the following code needs to work async. will move to inside the process page.
 		};
@@ -108,7 +108,8 @@ ThreadSetup.prototype = {
 
 		if (tabId)
 			chrome.tabs.sendMessage(tabId, {
-				action: "resreshPageResponse",
+				threadId: this.threadId,
+				action: "refreshPageResponse",
 				pageHTMLstring: cacheHolder["page" + pageNo],
 				cacheTime: cacheHolder["pageinfo" + pageNo][1]
 			});
@@ -127,7 +128,6 @@ ThreadSetup.prototype = {
 			var matcher,
 			idFind = new RegExp("(\\d*):(\\d*):" + postCount + ":.*?,", "i");
 			matcher = this.postsInfo.match(idFind);
-			console.log(matcher);
 			return (matcher && [matcher[1],parseInt(matcher[2])]) || [0,0];
 	},
 	loadURL: function (url, refresh, responseTabId) {
@@ -311,6 +311,7 @@ ThreadSetup.prototype = {
 				cachedPointer["pageinfo" + pageNo][2] = pageLastPostCount;
 				}
 			chrome.tabs.sendMessage(this.activeTabId, {
+				threadId: this.threadId,
 				action: "pageCachedNotify",
 				pageNo: pageNo,
 				cachedPageList: (cachedPointer && cachedPointer["cachedPageList"]) || false  //there's no way threadCachedPages for this thread id is not there at this point, checking just in case.
@@ -332,6 +333,7 @@ ThreadSetup.prototype = {
 				this.lastDisplayedPostCount = this.lastPostCount;
 				if (this.activeTabId) {
 					chrome.tabs.sendMessage(this.activeTabId, {
+						threadId: this.threadId,
 						action: "analyzeComplete",
 						populatePage: settings.populatepages
 					});
@@ -348,11 +350,12 @@ ThreadSetup.prototype = {
 			var newPostCount = this.lastPostCount - this.lastDisplayedPostCount;
 			if (newPostCount && newPostCount != this.newPostCount) {
 				this.newPostCount = newPostCount;
-				console.log("There are %d new posts in thread %s, last read post count is %s, first unread post id is %s on page %d",
-					this.lastPostCount - this.lastDisplayedPostCount, this.threadId, this.lastDisplayedPostCount, this.getPostInfo(this.lastDisplayedPostCount + 1)[0], this.getPostInfo(this.lastDisplayedPostCount + 1)[1]);
+//				console.log("There are %d new posts in thread %s, last read post count is %s, first unread post id is %s on page %d",
+//					this.lastPostCount - this.lastDisplayedPostCount, this.threadId, this.lastDisplayedPostCount, this.getPostInfo(this.lastDisplayedPostCount + 1)[0], this.getPostInfo(this.lastDisplayedPostCount + 1)[1]);
 				chrome.tabs.sendMessage(this.activeTabId, {
+					threadId: this.threadId,
 					action: "newPostsArrived",
-					noOfPosts: newPostCount
+					newPostCount: newPostCount
 				});
 			};
 		};
@@ -414,6 +417,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 			threadCachedPages = {};
 			if (request.tabId)
 				chrome.tabs.sendMessage(request.tabId, {
+					threadId : request.threadId,
 					action: "clearNavigation"
 				}); //we need to remove cached pages from navigation lists
 		};
@@ -423,7 +427,6 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 	};
 
 	if (request.action == "popupUIcommand_setThreadInfo") { //this is also received by the popup to set current / last pages
-			
 		chrome.runtime.sendMessage(null, {
 			action: "popupUIcommand_displayThreadStatus",
 			targetTab: request.tabId,
@@ -437,7 +440,8 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 		sendResponse({
 			populatePage: settings.populatepages && thread.status == "Analysis completed",
 			threadStatus : thread.status,
-			cachedPageList: settings.cachepages && cachedPointer && cachedPointer["cachedPageList"]
+			cachedPageList: settings.cachepages && cachedPointer && cachedPointer["cachedPageList"],
+			newPostCount: thread.newPostCount
 			});
 
 		return;
@@ -447,6 +451,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 		thread.abort = true;
 		if (settings.cachepages)
 			chrome.tabs.sendMessage(request.tabId, {
+				threadId: request.threadId,
 				action: "clearNavigation"
 			}); //we need to remove cached pages from navigation lists
 		return;
@@ -506,22 +511,31 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 			return;
 			};
 			
-		if(request.action == "requestPageForNavigation")
-			thread.lastDisplayedPostCount = Math.max(thread.lastDisplayedPostCount,(cachedPointer["pageinfo"+reqPage][2]||1)); //set last displayed post count only on page view
-
 		chrome.alarms.create("pageCacheRemove:" + thread.threadId, {
 			delayInMinutes: settings.pagecachetimelimit * 1
 		});
+		
+		//var newPostCount = thread.lastPostCount - thread.lastDisplayedPostCount;
+		if (request.action == "requestPageForNavigation") {
+			thread.lastDisplayedPostCount = Math.max(thread.lastDisplayedPostCount, (cachedPointer["pageinfo" + reqPage][2] || 1)); //set last displayed post count only on page view
+			thread.newPostCount = thread.lastPostCount - thread.lastDisplayedPostCount;
+		}
+		
+		console.log(thread.lastPostCount, thread.lastDisplayedPostCount);
+		//newPostCount -- have to fix this.
 		sendResponse({
 			action: "cachedPageResponse",
 			pageHTMLstring: cachedPointer["page" + reqPage],
 			pageURL: cachedPointer["pageinfo" + reqPage][0],
 			cacheTime: cachedPointer["pageinfo" + reqPage][1],
 			cachedPageList: cachedPointer["cachedPageList"],
+			newPostCount: thread.newPostCount,
 			firstUnread : firstUnread, //first unread post count
 			postId: postId,
 			pageNo: reqPage
 		});
+
+		
 		return;
 	};
 
@@ -604,7 +618,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 		chrome.tabs.sendMessage(request.tabId, request);
 		return;
 	};
-""
+
 	if (request.action == "listQuotingPosts" && thread) {
 		chrome.alarms.create("analysisCacheRemove:" + thread.threadId, {
 			delayInMinutes: settings.analysiscachetimelimit * 1

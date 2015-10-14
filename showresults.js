@@ -105,7 +105,7 @@ function setup() {
 // notifyUnreadCascade(52);
 };
 
-function triage(request) {
+function triage(request, sender, sendResponse) {
 
 	if (request.action == "pageInfoAnalyse") {
 		if (docReady)
@@ -123,6 +123,8 @@ function triage(request) {
 		});
 		return false;
 	};
+
+	if(threadId != request.threadId) return; //filter requests for other threads in case.
 
 	populatePage = populatePage || request.populatePage || false;
 
@@ -145,7 +147,7 @@ function triage(request) {
 		CACHE_PAGES = true;
 	};
 
-	if (request.action == "resreshPageResponse") {
+	if (request.action == "refreshPageResponse") {
 		// refreshAnim.breakLoop("gaf_enhance_extension_refreshcache");
 		refreshAnim.remove();
 		refreshAnim = null;
@@ -160,7 +162,9 @@ function triage(request) {
 		clearNavigation();
 		
 	if (request.action == "newPostsArrived")
-		newPostNotify(request.noOfPosts);
+		newPostNotify(request.newPostCount);
+	
+	//if(sendResponse) {console.log(sendResponse);sendResponse();}
 };
 
 function newPostNotify(newPostCount) {
@@ -269,7 +273,10 @@ function displayCachedPage(request) {
 	if(request.postId) {
 		window.location.hash = "post"+request.postId;
 		if(request.firstUnread) {notifyUnreadCascade(request.firstUnread)};
-		}
+		};
+	if(request.newPostCount) {
+		newPostNotify(request.newPostCount);
+	}
 };
 
 function notifyUnreadCascade(postCount) {
@@ -366,6 +373,7 @@ function threadInfo() {
 			CACHE_PAGES = true;
 			resetNavigation();
 		}
+		if(response.newPostCount) newPostNotify(response.newPostCount);
 		return;
 	});
 
