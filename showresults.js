@@ -65,7 +65,6 @@ pagePopulated = false,
 loadAnim = false,
 refreshAnim;
 
-
 if (document.readyState == "interactive" || document.readyState == "complete")
 	setup();
 else
@@ -97,6 +96,8 @@ function setup() {
 
 	postContainer = document.getElementById("posts");
 	docReady = true;
+	window.addEventListener("beforeunload",function(){chrome.runtime.sendMessage(null, {action : "unloading", threadId : threadId})});
+		
 
 //debug
 // newPostNotify(111);

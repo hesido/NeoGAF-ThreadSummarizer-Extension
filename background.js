@@ -518,10 +518,10 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 		//var newPostCount = thread.lastPostCount - thread.lastDisplayedPostCount;
 		if (request.action == "requestPageForNavigation") {
 			thread.lastDisplayedPostCount = Math.max(thread.lastDisplayedPostCount, (cachedPointer["pageinfo" + reqPage][2] || 1)); //set last displayed post count only on page view
-			thread.newPostCount = thread.lastPostCount - thread.lastDisplayedPostCount;
+			thread.newPostCount = (thread.lastPostCount) ? thread.lastPostCount - thread.lastDisplayedPostCount : 0;
 		}
 		
-		console.log(thread.lastPostCount, thread.lastDisplayedPostCount);
+
 		//newPostCount -- have to fix this.
 		sendResponse({
 			action: "cachedPageResponse",
@@ -538,6 +538,14 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 		
 		return;
 	};
+
+
+if (request.action == "unloading") {
+	
+	console.log("frfejıfj");
+}
+
+
 
 	if (request.action == "startAnalyze") {
 		if (thread && thread.status == "Analysis in progress")
