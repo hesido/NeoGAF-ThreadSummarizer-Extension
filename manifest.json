@@ -26,7 +26,7 @@
 		"128" : "noci-128.png"
 	},
 	"content_scripts" : [{
-			"matches" : ["http://*.neogaf.com/*"],
+			"matches" : ["http://*.neogaf.com/forum/showthread.php*"],
 			"js" : ["showresults.js"],
 			"css" : ["inject.css"],
 			"run_at" : "document_start"

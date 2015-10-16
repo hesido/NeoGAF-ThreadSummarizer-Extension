@@ -46,7 +46,7 @@
 //these could be enlosed to prevent touching the globals, but since extensions run in their own environment it's not necessary.
 var postContainer,
 tabId,
-threadId, // this is set by threadInfo() on request from popup.js and in popstate;
+threadId = 0, // this is set by threadInfo() on request from popup.js and in popstate;
 // mainDisplayJob = null,
 threadTitle,
 MAX_SIMULTANEOUS_POST_LOADS = 8, //variables that can be transferred to options page are capitalized.
@@ -64,6 +64,7 @@ populatePage = false, //this will be set after thread id is sent over
 pagePopulated = false,
 loadAnim = false,
 refreshAnim;
+
 
 if (document.readyState == "interactive" || document.readyState == "complete")
 	setup();
