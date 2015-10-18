@@ -126,7 +126,7 @@ function triage(request, sender, sendResponse) {
 		return false;
 	};
 
-	if(threadId != request.threadId) return; //filter requests for other threads in case.
+	if(threadId != request.threadId && !request.broadCast) return; //filter requests for other threads in case.
 
 	populatePage = populatePage || request.populatePage || false;
 
@@ -516,7 +516,6 @@ function clearNavigation() {
 	for (var i = 0; anchor = toRemove[i]; i++) {
 		anchor.parentNode.parentNode.removeChild(anchor.parentNode);
 	};
-	
 	anchor = null; //not sure if necessary, in case.
 	cachedPageList = ",";
 	parsedPages = {};

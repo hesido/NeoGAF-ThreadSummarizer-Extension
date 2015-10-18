@@ -75,6 +75,7 @@ function ThreadSetup(status, threadId) {
 	this.lastDisplayedPostCount = 0; //this holds the max post count after analysis is completed and/or user navigates to the last page
 	this.newPostCount = 0; //this holds the new post count, used so that there are not multiple notifications for the same number of new posts.
 	this.markedForRemoval = false;
+	this.blockedRefresh = false;
 };
 
 
@@ -85,6 +86,7 @@ ThreadSetup.prototype = {
 		if (!this.markedForRemoval && this.status !== "Analysis in progress" && this.lastPage && this.baseURL !== "") {
 			this.loadURL(this.baseURL + "&page=" + this.lastPage,true); //the following code needs to work async. will move to inside the process page.
 		};
+		if(this.markedForRemoval) this.blockedRefresh = true; //signal in case refresh happens to be during a page change, which may cause a refresh block, so refresh last page can be called as soon as possible after being blocked here. 
 	},
 	removePageCaches: function () {
 		threadCachedPages[this.threadId] = null;
@@ -310,9 +312,9 @@ ThreadSetup.prototype = {
 			this.loadURL(nextPageURL,refresh);
 		else {
 			this.status = "Analysis completed";
-			if (settings.autorefreshevery) {
+			if (settings.autorefreshevery && settings.cachepages) { //blocking is in effect when pages are not cached. This will change later.
 				chrome.alarms.create("refreshlastpage:" + this.threadId, {
-					delayInMinutes: settings.autorefreshevery * 0.5 //the default is * 1, if different, this is for debugging.
+					delayInMinutes: settings.autorefreshevery * 1 //the default is * 1, if different, this is for debugging.
 				});
 			};
 			if (!refresh) {//see if this is called for refresh or a normal analysis.
@@ -338,7 +340,7 @@ ThreadSetup.prototype = {
 				this.newPostCount = newPostCount;
 //				console.log("There are %d new posts in thread %s, last read post count is %s, first unread post id is %s on page %d",
 //					this.lastPostCount - this.lastDisplayedPostCount, this.threadId, this.lastDisplayedPostCount, this.getPostInfo(this.lastDisplayedPostCount + 1)[0], this.getPostInfo(this.lastDisplayedPostCount + 1)[1]);
-				chrome.tabs.sendMessage(this.activeTabId, {
+				if (settings.cachepages) chrome.tabs.sendMessage(this.activeTabId, { // currently blocking new post notifications when pages are not cached.
 					threadId: this.threadId,
 					action: "newPostsArrived",
 					newPostCount: newPostCount
@@ -396,7 +398,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 			chrome.alarms.create("pageCacheRemove:" + thread.threadId, {
 				delayInMinutes: settings.pagecachetimelimit * 1
 			});
-			console.log("Marking %s for removal", thread.threadId);
+			//console.log("Marking %s for removal", thread.threadId);
 			thread.markedForRemoval = true;
 		}
 		return;
@@ -408,8 +410,9 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 		thread.markedForRemoval = false;
 		chrome.alarms.clear("analysisCacheRemove:" + thread.threadId);
 		chrome.alarms.clear("pageCacheRemove:" + thread.threadId);
-		console.log("Saved %s from deletion", thread.threadId);
-	};
+		//console.log("Saved %s from deletion", thread.threadId);
+		if(thread.blockedRefresh) thread.refreshLastPage(); //call refresh immediately if it is blocked due to markedForRemoval.
+		};
 	};
 		
 		
@@ -436,12 +439,13 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 	if (request.action == "receiveSettings") {
 		for (var key in request.settings) { //accommodate for partial sending of settings
 			settings[key] = request.settings[key];
-		}
+		};
 		if (!settings.cachepages) {
 			threadCachedPages = {};
-			if (request.tabId)
+			if (request.tabId) //dev: we need to send this to all tabs of interest.
 				chrome.tabs.sendMessage(request.tabId, {
-					threadId : request.threadId,
+					broadCast : true,
+					//threadId : request.threadId,
 					action: "clearNavigation"
 				}); //we need to remove cached pages from navigation lists
 		};
@@ -555,13 +559,6 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 		
 		return;
 	};
-
-
-if (request.action == "unloading") {
-	
-	console.log("frfejıfj");
-}
-
 
 
 	if (request.action == "startAnalyze") {

@@ -27,6 +27,7 @@ document.addEventListener('DOMContentLoaded', function () {
 	//progrbar = document.getElementById("bar"),
 	setbuttn = document.getElementById("settingsbutton"),
 	settndiv = document.getElementById("generalsettings"),
+	refreshp = document.getElementById("autorefreshtext"),
 	baranima = new $fleXanim.Prepare();
 
 	baranima.setTemplate({
@@ -75,6 +76,7 @@ document.addEventListener('DOMContentLoaded', function () {
 			cacheset.addEventListener("change", submitSetting);
 			poplpage.addEventListener("change", submitSetting);
 			autorefr.addEventListener("change", submitSetting);
+			setVisibility();
 		};
 
 		request.targetTab = request.targetTab || (sender.tab && sender.tab.id) || false;
@@ -213,6 +215,11 @@ document.addEventListener('DOMContentLoaded', function () {
 		};
 
 	});
+	
+	function setVisibility() {
+		if(!settings.cachepages) refreshp.classList.add("disabled");
+		else refreshp.classList.remove("disabled");
+	}
 
 	function submitSetting() {
 		settings.threshold = inputvl1.value;
@@ -221,6 +228,8 @@ document.addEventListener('DOMContentLoaded', function () {
 		settings.cachepages = cacheset.checked;
 		settings.populatepages = poplpage.checked;
 		settings.autorefreshevery = autorefr.value;
+		setVisibility();
+
 		chrome.runtime.sendMessage(null, {
 			action : "receiveSettings",
 			settings : settings,
