@@ -1,4 +1,7 @@
-NeoGAF thread summarizer shifts through thread pages starting from the page it was called on, and then allows you to view most quoted posts with a threshold you can set. Once a thread is analysed, you can display posts with different quote threshold values. You can also track your own or any user's posts, and replies to those posts. Pages are cached so you can switch between pages really fast.
+NeoGAF thread summarizer shifts through thread pages starting from the page it was called on, and then allows you to view most quoted posts with a threshold you can set. Once a thread is analysed, you can display posts with different quote threshold values. You can also track your own or any user's posts, and replies to those posts. Pages are cached so you can switch between pages really fast. V1.7 introduces live thread functionality, you are notified for new posts in the thread.
+-----
+Version 1.7.0.0 Change log
+New posts are now notified on a thread after analysis (optional, default on)
 
 Version 1.6.1.3 Change log
 Preparing for GIT, minor bug fixes and code clean up.
@@ -62,3 +65,44 @@ Version 1.0 Change log:
 *The posts are now loaded in correct order.
 *Added the option to sort posts by the quote popularity (default is chronological.)
 *Better error handling
+
+
+//done: Cached navigation
+//done: remove background.window object references in popup.js
+//done: click handlers no longer to use closures
+//done: Re-display results without re-load
+//done: add basic cache settings on popup
+
+//done: aggressive removal of cached pages to reduce mem usage (remedy the increased mem usage introduced by "use cached pages for post retrieval")
+//done: settings are stored, synced
+//done: fix behaviour that causes separate quotes of the same post in the same quoting post to be counted multiple times
+//done: better behaviour when re-analysing already analyzed threads
+//done: time limit assigned for auto removal of cached pages
+//done: separate options page
+//done: optionally use cache when re-analyzing (except last page analyzed)
+//done: infinite recursive post display
+//done: collapse quoters properly in recursive fashion
+//done: fix: re-analysis broken after recursive post display
+//done: fix: re-displaying analysis results is buggy
+//done: manual refresh page to update caches
+//done: auto refresh last page to notify of new posts
+//change: Now, thread analysis data is kept until all tabs of the thread is closed, where they are removed after a user-defined time. Old versions looked for navigational activity to keep the thread data alive.
+
+//partially done: fix memory leaks - extensions memory leaks patched. Memory leak due to neogaf html may be fixed later
+//partially done: tab handling (CurrentlyK keeping record of all open tabs of the thread in thread data)
+// OR
+//better handling of errors cache is removed but requests are made from tabs 
+
+//to do: Populated pages should update with updated analysis
+//to do: Completely unify first displayJob, recursed displayJob, and populated displayJobs to use the same code path.
+//to do: fragment error handling could be done better;
+//to do: proper representation of recursion (too many recursions will make the content very narrow)
+//to do: show results page in navigation history (hitting back and forward should take you to the results display)
+
+//to do: dedicated button to delete all thread analyse cache
+//to do: cached page limit setting with dynamic caching
+//to do: display a basic graph about quoted posts
+//to do: do reply tracking on a post by post basis instead of inside a thread using contextual menu. May be used to track replies to specific posts in post search results.
+//to do: kick start analysis from forum thread list pages using contextual menus
+//to do: Cached navigation with animation -> not a priority.,
+//to do: animated collapse

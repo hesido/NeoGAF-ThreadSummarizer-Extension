@@ -115,6 +115,10 @@
             width: auto;
         }
 
+        input.settings.inflow {
+            width: 2.2em;
+        }
+        
         div#message {
             margin: 5px auto 0;
             width: 98%;
@@ -146,6 +150,10 @@
             border-radius: 0 0 4px 4px;
             border-color: #d2e9f7;
         }
+        
+        p.disabled {
+            display: none;
+        }
 
     </style>
 
@@ -172,6 +180,7 @@
         <div class="cover" id="generalsettings">
             <p title="Put analysed pages in cache for fast loading of posts and fast navigation"><input class="settings" type="checkbox" name="cachepageset" id="cachepage" value="cachepages">Cache analyzed pages</p>
             <p title="Use analysis information to populate pages during normal thread navigation"><input class="settings" type="checkbox" name="populatepage" id="populpage" value="populpages">Populate normal thread views</p>
+            <p title="Set number of minutes to wait for refreshing last page" id="autorefreshtext"> Auto refresh last page every <input class="settings inflow" type="number" name="autorefreshlastpageset" id="autorefreshlastpage" value="1" min="0"> minute(s).(0 disables auto refresh)</p>
         </div>
         <span id="settingsbutton">Quick settings</span>
 

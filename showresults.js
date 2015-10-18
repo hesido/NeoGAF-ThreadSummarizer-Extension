@@ -1,56 +1,14 @@
 // NeoGAF Thread Summarizer Copyright (c) 2015 hesido.com
 "use strict";
 
-//done: Cached navigation
-//done: remove background.window object references in popup.js
-//done: click handlers no longer to use closures
-//done: Re-display results without re-load
-//done: add basic cache settings on popup
-
-//done: aggressive removal of cached pages to reduce mem usage (remedy the increased mem usage introduced by "use cached pages for post retrieval")
-//done: settings are stored, synced
-//done: fix behaviour that causes separate quotes of the same post in the same quoting post to be counted multiple times
-//done: better behaviour when re-analysing already analyzed threads
-//done: time limit assigned for auto removal of cached pages
-//done: separate options page
-//done: optionally use cache when re-analyzing (except last page analyzed)
-//done: infinite recursive post display
-//done: collapse quoters properly in recursive fashion
-//done: fix: re-analysis broken after recursive post display
-//done: fix: re-displaying analysis results is buggy
-//done: manual refresh page to update caches
-
-//partially done: fix memory leaks - extensions memory leaks patched. Memory leak due to neogaf html may be fixed later
-//to do: tab handling (Keep record of all open neogaf.com thread tabs and send them notifications when cache is removed / stale)
-// OR
-//better handling of errors cache is removed but requests are made from tabs 
-
-//tp do: Populated pages should update with updated analysis
-//to do: Completely unify first displayJob, recursed displayJob, and populated displayJobs to use the same code path.
-//to do: fragment error handling could be done better;
-//to do: proper representation of recursion (too many recursions will make the content very narrow)
-//to do: show results page in navigation history (hitting back and forward should take you to the results display)
-
-//to do: auto refresh pages visited to reflect any changes (may not be possible in a transparent manner without re-downloading page)
-
-//to do: button to delete all thread analyse cache
-//to do: cached page limit setting with dynamic caching
-//to do: display a basic graph about quoted posts
-//to do: do reply tracking on a post by post basis instead of inside a thread using contextual menu. May be used to track replies to specific posts in post search results.
-//to do: kick start analysis from forum thread list pages using contextual menus
-//to do: Cached navigation with animation -> not a priority.,
-//to do: animated collapse
-
-//to do: break showresults into separate files to lessen memory impact, load / execute only necessary files.
-
 //these could be enlosed to prevent touching the globals, but since extensions run in their own environment it's not necessary.
 var postContainer,
 tabId,
-threadId, // this is set by threadInfo() on request from popup.js and in popstate;
+threadId = 0, // this is set by threadInfo() on request from popup.js and in popstate;
 // mainDisplayJob = null,
 threadTitle,
 MAX_SIMULTANEOUS_POST_LOADS = 8, //variables that can be transferred to options page are capitalized.
-MIN_QUOTE_TRESHOLD = 2,
+//MIN_QUOTE_TRESHOLD = 2,
 MIN_WAIT_BEFORE_APPEND = 40, //milliseconds to wait for the next post load before appending it to page.
 CACHE_PAGES = false, //will be set to true if background page does a "pushCachedPageList"
 allowedConnectionPool = MAX_SIMULTANEOUS_POST_LOADS,
@@ -97,10 +55,10 @@ function setup() {
 
 	postContainer = document.getElementById("posts");
 	docReady = true;
+	window.addEventListener("beforeunload",function(){chrome.runtime.sendMessage(null, {action : "unloading", threadId : threadId})});
 };
 
-function triage(request) {
-	cachedPageList = (request.cachedPageList) ? request.cachedPageList : cachedPageList;
+function triage(request, sender, sendResponse) {
 
 	if (request.action == "pageInfoAnalyse") {
 		if (docReady)
@@ -119,34 +77,30 @@ function triage(request) {
 		return false;
 	};
 
+	if(threadId != request.threadId && !request.broadCast) return; //filter requests for other threads in case.
+
 	populatePage = populatePage || request.populatePage || false;
 
-	if (request.action == "analyzeComplete" && !pagePopulated && populatePage) doPagePopulate();
+	if (request.action == "analyzeComplete" && !pagePopulated && populatePage)
+		doPagePopulate();
 
 	if (request.action == "displayResults")
 		showResults(request);
 
 	if (request.action == "listQuotingPosts") {
-		displayJobs[request.quotedId + "_job"] = new setupDisplay(request);
+		displayJobs[request.quotedId + "_job"] = new SetupDisplay(request);
 		displayJobs[request.quotedId + "_job"].begin(); //maybe we need to stop using begin() and have it auto-initiate;
 	};
 
-	if (request.action == "pushCachedPageList") {
-		//cachedPageList = request.cachedPageList;
-		if (!CACHE_PAGES)
-			window.addEventListener('popstate', handleHistory);
-		CACHE_PAGES = true;
-		resetNavigation();
-	};
-
 	if (request.action == "pageCachedNotify") {
+		cachedPageList = request.cachedPageList;
 		setCachedLink(request.pageNo);
 		if (!CACHE_PAGES)
 			window.addEventListener('popstate', handleHistory);
 		CACHE_PAGES = true;
 	};
 
-	if (request.action == "resreshPageResponse") {
+	if (request.action == "refreshPageResponse") {
 		// refreshAnim.breakLoop("gaf_enhance_extension_refreshcache");
 		refreshAnim.remove();
 		refreshAnim = null;
@@ -159,8 +113,68 @@ function triage(request) {
 
 	if (request.action == "clearNavigation")
 		clearNavigation();
-
+		
+	if (request.action == "newPostsArrived")
+		newPostNotify(request.newPostCount);
+	
+	//if(sendResponse) {console.log(sendResponse);sendResponse();}
 };
+
+function newPostNotify(newPostCount) {
+	
+	var newPostNotes = document.querySelectorAll("a.gaf_enhance_extension_newpost");
+	if(newPostNotes.length == 0) {
+		insertNewPostNote();
+		newPostNotes = document.querySelectorAll("a.gaf_enhance_extension_newpost");
+	}
+
+	for (var i = 0, anch; anch = newPostNotes[i]; i++) {
+		flashElement(anch);
+		anch.textContent = newPostCount + " new post" + ((newPostCount > 1)? "s" : "");
+	}
+}
+
+function flashElement(elm) {
+	if (elm) {
+		elm.classList.add("g_e_e_flashready");
+		elm.classList.add("g_e_e_initial");
+		elm.classList.remove("g_e_e_active");
+		window.setTimeout(flashElement.bind(elm), 66);
+	} else {
+		this.classList.remove("g_e_e_initial");
+		this.classList.add("g_e_e_active");
+	}
+}
+
+function insertNewPostNote() {
+	var insertTargets = document.querySelectorAll("ul.pagenav");
+	if (insertTargets.length == 0) {
+		var insertTargetParents = document.querySelectorAll("div.clearfix:not(.tcat)>div.right");
+		if(insertTargetParents.length == 0) return;
+		for (var i = 0, insertTargetParent; insertTargetParent = insertTargetParents[i]; i++) {
+			insertTargets[i] = document.createElement("ul");
+			insertTargets[i].classList.add("pagenav");
+			insertTargetParent.appendChild(insertTargets[i]);
+		}		
+	}; //insertTargets[0] = document.querySelector("div.right");
+	//if (insertTargets[0] == null) return;
+	var toInsert, anch;
+
+	//toInsert.classList.add("gaf_enhance_extension_newpost");
+	
+	for (var i = 0, insertionPoint; insertionPoint = insertTargets[i]; i++) {
+		toInsert = document.createElement("li");
+		anch = document.createElement("a");
+		anch.classList.add("gaf_enhance_extension_newpost");
+		anch.href = "#"
+		toInsert.appendChild(anch);
+		anch.addEventListener("click", cacheLink, false);	
+		if(insertionPoint.firstElementChild!==null)
+			insertionPoint.insertBefore(toInsert,insertionPoint.firstElementChild)
+		else
+			insertionPoint.appendChild(toInsert);
+	}
+}
 
 function displayCachedPage(request) {
 
@@ -209,7 +223,30 @@ function displayCachedPage(request) {
 	pagePopulated = false;
 	threadInfo();
 	resetNavigation();
+	if(request.postId) {
+		window.location.hash = "post"+request.postId;
+		if(request.firstUnread) {notifyUnreadCascade(request.firstUnread)};
+		};
+	if(request.newPostCount) {
+		newPostNotify(request.newPostCount);
+	}
+};
 
+function notifyUnreadCascade(postCount) {
+	var anchor = null,
+		nextAnchor;
+
+	if (postCount) {
+		anchor = document.querySelector("a[name='" + postCount + "']")
+	} else {
+		anchor = this;
+		postCount = (this.name && parseInt(this.name)) || -1
+		};
+
+	if (anchor) flashElement(anchor.parentNode.parentNode.parentNode.parentNode);
+	
+	if (nextAnchor = document.querySelector("a[name='" + (postCount + 1) + "']"))
+		window.setTimeout(notifyUnreadCascade.bind(nextAnchor), 66);
 };
 
 function threadInfo() {
@@ -256,6 +293,8 @@ function threadInfo() {
 		};
 		lastPage = Math.max(curPage, lastPage);
 	};
+	
+	lastPage = parseInt(lastPage);
 
 	if (!threadId) {
 		chrome.runtime.sendMessage(null, {
@@ -279,6 +318,15 @@ function threadInfo() {
 		//dev - populate page: this will get an answer as to whether the page should be populated.
 		populatePage = response.populatePage;
 		if (!pagePopulated && populatePage) doPagePopulate();
+		if (response.cachedPageList) {
+			cachedPageList = response.cachedPageList;
+			//cachedPageList = request.cachedPageList;
+			if (!CACHE_PAGES)
+				window.addEventListener('popstate', handleHistory);
+			CACHE_PAGES = true;
+			resetNavigation();
+		}
+		if(response.newPostCount) newPostNotify(response.newPostCount);
 		return;
 	});
 
@@ -291,6 +339,8 @@ function threadInfo() {
 };
 
 function doPagePopulate() {
+	if(pagePopulated) return; //safety valve
+	pagePopulated = true; //currently updates to existing populated links are not possible.
 	var postCTAnchors = document.querySelectorAll("a[id^='postcount']"),
 		rexer = /showpost.php\?p=(\d+)&postcount=/,
 		postIdList = [];
@@ -316,7 +366,6 @@ function doPagePopulate() {
 				addQuotedInfo(span, quotedInfo[1], quotedInfo[0], true);
 			};
 		});
-		pagePopulated = true; //currently updates to existing populated links are not possible.
 	});
 
 }
@@ -331,7 +380,7 @@ function resetNavigation() {
 }
 
 function setCachedLink(cachedPageNo) {
-	var anchors = document.querySelectorAll("ul.pagenav a"),
+	var anchors = document.querySelectorAll("ul.pagenav a:not(.gaf_enhance_extension_newpost)"),
 	anchor,
 	pageNo,
 	pageExtract,
@@ -346,7 +395,6 @@ function setCachedLink(cachedPageNo) {
 			anchor.setAttribute("data-gafenhancepageno", pageNo);
 			anchor.classList.add("gaf_enhance_extension_cached");
 			anchor.addEventListener("click", cacheLink, false);
-
 		}; //dev note: some animation would be nice.
 	};
 
@@ -361,22 +409,7 @@ function refreshPage() {
 
 	displayJobs = {}; //zap display jobs - previously not needed as normal pages weren't populated by the extension.
 
-	refreshAnim = new loadingAnim("#gaf_enhance_extension_refreshcache")
-	// refreshAnim = new $fleXanim.prepare();
-
-	// refreshAnim.setAnimation({
-		// template : "color:RGB(##,##,##)",
-		// startVal : [255, 255, 255],
-		// endVal : [170, 170, 210],
-		// frames : 16
-	// }).setAnimation({
-		// template : "color:RGB(##,##,##)",
-		// endVal : [255, 255, 255],
-		// frames : 16
-	// }).loop().clearAnim(); //clear anim is added to remove reference to animated object
-
-	// refreshAnim.init("gaf_enhance_extension_refreshcache");
-	// refreshAnim.animate("gaf_enhance_extension_refreshcache");
+	refreshAnim = new LoadingAnim("#gaf_enhance_extension_refreshcache")
 
 	chrome.runtime.sendMessage(null, {
 		action : "refreshPageCache",
@@ -394,7 +427,7 @@ function refreshPage() {
 };
 
 function cacheLink(e) {
-	var clickedPage = this.getAttribute("data-gafenhancepageno"),
+	var clickedPage = this.getAttribute("data-gafenhancepageno") || false,
 	href = this.href;
 
 	displayJobs = {}; //zap previous jobs // this may later have to be solved in an elegant way allowing for collapse state preserving browser history events.
@@ -409,9 +442,9 @@ function cacheLink(e) {
 			return; //add document url change here.
 		}
 		//dev - populate page: this will get an answer as to whether the page should be populated.
-
+		href = response.pageURL;
 		history.pushState({
-			gafEnhancePopState_page : clickedPage
+			gafEnhancePopState_page : response.page
 		}, null, href);
 		displayCachedPage(response);
 	});
@@ -420,14 +453,21 @@ function cacheLink(e) {
 };
 
 function clearNavigation() {
-	var toClear = document.querySelectorAll("ul.pagenav a.gaf_enhance_extension_cached"),
-	anchor;
+	var toClear = document.querySelectorAll("ul.pagenav a"),
+		anchor,
+		toRemove;
 	//titleSpan = null;
 
-	for (var i = 0; anchor = toClear.item(i); i++) {
+	for (var i = 0; anchor = toClear[i]; i++) {
 		anchor.classList.remove("gaf_enhance_extension_cached");
 		anchor.removeEventListener("click", cacheLink, false);
 	};
+	
+	toRemove = document.querySelectorAll("a.gaf_enhance_extension_newpost")
+	for (var i = 0; anchor = toRemove[i]; i++) {
+		anchor.parentNode.parentNode.removeChild(anchor.parentNode);
+	};
+	anchor = null; //not sure if necessary, in case.
 	cachedPageList = ",";
 	parsedPages = {};
 };
@@ -473,7 +513,7 @@ function showResults(request) {
 		initAnim();
 
 		displayJobs = {}; //zap previous jobs // this may later have to be solved in an elegant way allowing for collapse state preserving browser history events.
-		displayJobs["maindisplayjob"] = new setupDisplay(request);
+		displayJobs["maindisplayjob"] = new SetupDisplay(request);
 		displayJobs["maindisplayjob"].begin();
 		// mainDisplayJob.begin();
 
@@ -482,7 +522,7 @@ function showResults(request) {
 
 function initAnim() {
 	if (loadAnim) return;
-	loadAnim = new $fleXanim.prepare();
+	loadAnim = new $fleXanim.Prepare();
 	loadAnim.setAnimation({
 		template: "backgroundColor:RGB(##,##,##)",
 		startVal: [73, 130, 174],
@@ -495,9 +535,9 @@ function initAnim() {
 	}).loop().clearAnim();
 }
 
-function loadingAnim(selector) {
+function LoadingAnim(selector) {
 	var appendAfter = document.querySelector(selector);
-	if (!appendAfter) return false;
+	if (!appendAfter) return;
 	var	appendPoint = appendAfter.nextElementSibling || false;
 	this.span = document.createElement("span"),
 	this.span.classList.add("gaf_enhance_extension_loading");
@@ -505,7 +545,7 @@ function loadingAnim(selector) {
 	else appendAfter.parentNode.appendChild(this.span);
 };
 
-loadingAnim.prototype = {
+LoadingAnim.prototype = {
 	remove:function() {
 		if(!this.span) return false; //for cases when selector fails.
 		this.span.parentNode.removeChild(this.span);
@@ -513,7 +553,7 @@ loadingAnim.prototype = {
 	}
 };
 
-function setupDisplay(request) {
+function SetupDisplay(request) {
 	// var dataSource = request.quotedInfo || false,
 	var threshold = parseInt(request.threshold) || 1;
 
@@ -600,7 +640,7 @@ function setupDisplay(request) {
 	};
 };
 
-setupDisplay.prototype = {
+SetupDisplay.prototype = {
 
 	begin : function () {
 		//		loadAnim.init(this.loadAnimElmId); //make sure we reset to the first animation key as this may be called multiple times for the same reference.
@@ -889,7 +929,8 @@ function addQuotedInfo(span, timesQuoted, dataString, popQuoted) {
 	anchor.classList.add("gaf_enhance_extension_lister");
 	if (popQuoted) anchor.href = "#post" + dataString; //careful with datastring structure change and / or unification of code path
 	anchor.addEventListener("click", (popQuoted) ? populatedQuoters : displayQuoters, false);
-	span.insertBefore(anchor, span.firstChild)
+	flashElement(anchor);
+	span.insertBefore(anchor, span.firstChild);
 };
 
 function collapsePosts() {
@@ -902,7 +943,7 @@ function collapsePosts() {
 	//we now have to check whether a parent exists, due to auto-populated quoted listings not having a parent. May not be necessary after unification of code paths between auto-populated and on demand listing
 	if (displayJobs[displayJobs[jobId].parentJobId]) displayJobs[displayJobs[jobId].parentJobId].childJobList = displayJobs[displayJobs[jobId].parentJobId].childJobList.filter(function (jobIdItem) {
 		return (jobIdItem !== jobId)
-	}); // remove from parent child job listdis
+	}); // remove from parent child job lists
 	nullJob(jobId); //recursively zap child job lists.
 
 };
@@ -948,20 +989,20 @@ function collapsePosts() {
 			quotedId: "post" + postId ,
 			parentJobId: "populateJob" //no such parent job exists, currently.
 		});
-		
+
 		return;
-	}
+	};
 
 	//fleXanim v1.1 beta 5 //minimal animation library by hesido.com
 	var $fleXanim = {
 		aeT : {},
-		prepare : function () {
+		Prepare : function () {
 			this.aeL = {};
 			this.aQ = []
 		}
 	};
 
-	$fleXanim.prepare.prototype = {
+	$fleXanim.Prepare.prototype = {
 		setAnimation : function (s) {
 			if (!s.cachE)
 				s.cachE = {

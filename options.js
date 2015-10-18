@@ -9,17 +9,19 @@ statusms,
 usecaclb,
 pagemodi,
 onpageac,
+autorefr,
 usecachesetting,
 receivedsettings = false,
 settings = {
-	settingsVersion: 1.1,
+	settingsVersion: 1.3,
 	cachepages: true,
 	usecacheforanalysis: true,
 	pagecachetimelimit: 15,
 	analysiscachetimelimit: 15,
 	populatepages: true,
 	onpageactions: true,
-}; //set defaults first without waiting for the local storage callback just in case; //set defaults first without waiting for the local storage callback just in case
+	autorefreshevery: 1,
+}; //set defaults first without waiting for the local storage callback just in case;
 
 
 function save_options() {
@@ -31,7 +33,8 @@ function save_options() {
 		pagecachetimelimit : cachelim.value || settings.pagecachetimelimit,
 		analysiscachetimelimit: analimit.value || settings.analysiscachetimelimit,
 		populatepages: pagemodi.checked,
-		onpageactions: onpageac.checked
+		onpageactions: onpageac.checked,
+		autorefreshevery: autorefr.value
 	};
 	chrome.storage.sync.set(settings, function () {
 		// Update status to let user know options were saved.
@@ -58,6 +61,7 @@ function restore_options() {
 	usecaclb = document.getElementById('usecachepages_label');
 	pagemodi = document.getElementById('dopagemod');
 	onpageac = document.getElementById('onpageactions');
+	autorefr = document.getElementById('autorefreshlastpage');
 
 	chrome.storage.sync.get(
 		settings, function (savedSettings) {
@@ -68,7 +72,7 @@ function restore_options() {
 		analimit.value = savedSettings.analysiscachetimelimit;
 		pagemodi.checked = savedSettings.populatepages;
 		onpageac.checked = savedSettings.onpageactions;
-
+		autorefr.value = savedSettings.autorefreshevery;
 		settings = savedSettings;
 
 		if (!cacheset.checked) {
