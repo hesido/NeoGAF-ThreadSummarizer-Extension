@@ -1,48 +1,6 @@
 // NeoGAF Thread Summarizer Copyright (c) 2015 hesido.com
 "use strict";
 
-//done: Cached navigation
-//done: remove background.window object references in popup.js
-//done: click handlers no longer to use closures
-//done: Re-display results without re-load
-//done: add basic cache settings on popup
-
-//done: aggressive removal of cached pages to reduce mem usage (remedy the increased mem usage introduced by "use cached pages for post retrieval")
-//done: settings are stored, synced
-//done: fix behaviour that causes separate quotes of the same post in the same quoting post to be counted multiple times
-//done: better behaviour when re-analysing already analyzed threads
-//done: time limit assigned for auto removal of cached pages
-//done: separate options page
-//done: optionally use cache when re-analyzing (except last page analyzed)
-//done: infinite recursive post display
-//done: collapse quoters properly in recursive fashion
-//done: fix: re-analysis broken after recursive post display
-//done: fix: re-displaying analysis results is buggy
-//done: manual refresh page to update caches
-
-//partially done: fix memory leaks - extensions memory leaks patched. Memory leak due to neogaf html may be fixed later
-//to do: tab handling (Keep record of all open neogaf.com thread tabs and send them notifications when cache is removed / stale)
-// OR
-//better handling of errors cache is removed but requests are made from tabs 
-
-//to do: Populated pages should update with updated analysis
-//to do: Completely unify first displayJob, recursed displayJob, and populated displayJobs to use the same code path.
-//to do: fragment error handling could be done better;
-//to do: proper representation of recursion (too many recursions will make the content very narrow)
-//to do: show results page in navigation history (hitting back and forward should take you to the results display)
-
-//to do: auto refresh pages visited to reflect any changes (may not be possible in a transparent manner without re-downloading page)
-
-//to do: dedicated button to delete all thread analyse cache
-//to do: cached page limit setting with dynamic caching
-//to do: display a basic graph about quoted posts
-//to do: do reply tracking on a post by post basis instead of inside a thread using contextual menu. May be used to track replies to specific posts in post search results.
-//to do: kick start analysis from forum thread list pages using contextual menus
-//to do: Cached navigation with animation -> not a priority.,
-//to do: animated collapse
-
-//to do: break showresults into separate files to lessen memory impact, load / execute only necessary files.
-
 //these could be enlosed to prevent touching the globals, but since extensions run in their own environment it's not necessary.
 var postContainer,
 tabId,
@@ -98,13 +56,6 @@ function setup() {
 	postContainer = document.getElementById("posts");
 	docReady = true;
 	window.addEventListener("beforeunload",function(){chrome.runtime.sendMessage(null, {action : "unloading", threadId : threadId})});
-		
-
-//debug
-// newPostNotify(111);
-// // window.setTimeout(function(){newPostNotify(112)},500);
-// // window.setTimeout(function(){newPostNotify(113)},1000);
-// notifyUnreadCascade(52);
 };
 
 function triage(request, sender, sendResponse) {

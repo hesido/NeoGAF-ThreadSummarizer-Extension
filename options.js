@@ -13,7 +13,7 @@ autorefr,
 usecachesetting,
 receivedsettings = false,
 settings = {
-	settingsVersion: 1.2,
+	settingsVersion: 1.3,
 	cachepages: true,
 	usecacheforanalysis: true,
 	pagecachetimelimit: 15,
@@ -21,7 +21,7 @@ settings = {
 	populatepages: true,
 	onpageactions: true,
 	autorefreshevery: 1,
-}; //set defaults first without waiting for the local storage callback just in case; //set defaults first without waiting for the local storage callback just in case
+}; //set defaults first without waiting for the local storage callback just in case;
 
 
 function save_options() {

@@ -3,7 +3,7 @@
 var threadData = {},
 threadCachedPages = {},
 settings = {
-	settingsVersion: 1.2,
+	settingsVersion: 1.3,
 	minimumCompatibleSettingsVersion: 1.0,
 	threshold: 3,
 	ordertype: 0,
@@ -83,6 +83,7 @@ ThreadSetup.prototype = {
 	tolerance: 0, //abort at first error
 	refreshLastPage: function() {
 //		console.log("refreshing %s, last page %d, base url %s", this.threadId, this.lastPage, this.baseURL);
+		this.blockedRefresh = false;
 		if (!this.markedForRemoval && this.status !== "Analysis in progress" && this.lastPage && this.baseURL !== "") {
 			this.loadURL(this.baseURL + "&page=" + this.lastPage,true); //the following code needs to work async. will move to inside the process page.
 		};
