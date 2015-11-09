@@ -4,11 +4,7 @@ This Branch is WIP, not supposed to work and is volatile. Please download the ma
 Cloned on Work Computer
 
 Current known problems with the branch:
-The intended live thread functionality is not yet in place. -WIP-
-
-ToDo:
-Page navigation list should be handled exclusively by the extension for the live thread view to work in a meaningful way.
-New posts detection should be suppressed after standard browser navigation to that page.
+Extension is working as intended on version 1.7.0.0
 
 This extension provides features that aid browsing of NeoGAF forums.
 
