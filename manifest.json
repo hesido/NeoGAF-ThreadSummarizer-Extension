@@ -1,6 +1,6 @@
 {
 	"name" : "NeoGAF Thread Summarizer",
-	"version" : "1.7.0.0",
+	"version" : "1.7.0.1",
 	"description" : "Analyses threads for most quoted posts, lets you keep track of your favourite posters, caches thread pages for fast access.",
 	"background" : {
 		"scripts" : ["background.js"]
