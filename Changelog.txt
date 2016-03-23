@@ -1,5 +1,8 @@
 NeoGAF thread summarizer shifts through thread pages starting from the page it was called on, and then allows you to view most quoted posts with a threshold you can set. Once a thread is analysed, you can display posts with different quote threshold values. You can also track your own or any user's posts, and replies to those posts. Pages are cached so you can switch between pages really fast. V1.7 introduces live thread functionality, you are notified for new posts in the thread.
 -----
+Version 1.7.0.1 Change log
+Apapted to SSL change on NeoGAF
+
 Version 1.7.0.0 Change log
 New posts are now notified on a thread after analysis (optional, default on)
 
