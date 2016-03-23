@@ -52,7 +52,6 @@ function handleHistory(event) {
 function setup() {
 	if (!threadInfo())
 		return;
-
 	postContainer = document.getElementById("posts");
 	docReady = true;
 	window.addEventListener("beforeunload",function(){chrome.runtime.sendMessage(null, {action : "unloading", threadId : threadId})});
@@ -257,18 +256,18 @@ function threadInfo() {
 	//curPage, //globalised
 	lastPageExtract,
 	lastPage,
-	domainPrefix = "www.",
+	protocolAndSubDomain = "http://www.",
 	//baseURIRex = /(.*\/).*$/, //use matchedurl and replace domainPrefix with baseURI capture
 	pageRex = /(?:\?|&)page=(\d+)/;
 
-	if (!(matchedURL = document.URL.match(/https?:\/\/(.*\.?)neogaf\.com\/.*showthread.php\?.*/)))
+	if (!(matchedURL = document.URL.match(/(https?:\/\/.*\.?)neogaf\.com\/.*showthread.php\?.*/)))
 		return false;
 
 	threadId = matchedURL[0].match(/(?:\?|&)t=(\d+)/);
 	threadId = threadId && threadId[1];
 	curPage = matchedURL[0].match(pageRex);
 	curPage = curPage && curPage[1];
-	domainPrefix = matchedURL[1];
+	protocolAndSubDomain = matchedURL[1];
 
 	threadIdExtract = document.getElementsByName("searchthreadid")[0] || false;
 	threadId = threadId || (threadIdExtract && threadIdExtract.value);
@@ -308,9 +307,7 @@ function threadInfo() {
 	chrome.runtime.sendMessage(null, {
 		action : "popupUIcommand_setThreadInfo",
 		threadId : threadId,
-		url : "http://" + domainPrefix + "neogaf.com/forum/showthread.php?t=" + threadId,
-		//url: "http://" + domainPrefix + "neogaf.com/forum/showthread.php?t=" + threadId + "&page=" + curPage,
-		//			urlPrefix: domainPrefix,
+		url : protocolAndSubDomain + "neogaf.com/forum/showthread.php?t=" + threadId,
 		curPage : curPage,
 		lastPage : lastPage,
 		threadTitle : threadTitle
