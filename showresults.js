@@ -21,6 +21,7 @@ curPage = false, //we need this in the refresh page function
 populatePage = false, //this will be set after thread id is sent over
 pagePopulated = false,
 loadAnim = false,
+protocol = "http://",
 refreshAnim;
 
 
@@ -256,18 +257,19 @@ function threadInfo() {
 	//curPage, //globalised
 	lastPageExtract,
 	lastPage,
-	protocolAndSubDomain = "http://www.",
+    subdomain = "www.",
 	//baseURIRex = /(.*\/).*$/, //use matchedurl and replace domainPrefix with baseURI capture
 	pageRex = /(?:\?|&)page=(\d+)/;
 
-	if (!(matchedURL = document.URL.match(/(https?:\/\/.*\.?)neogaf\.com\/.*showthread.php\?.*/)))
+	if (!(matchedURL = document.URL.match(/(https?:\/\/)(.*\.?)neogaf\.com\/.*showthread.php\?.*/)))
 		return false;
 
 	threadId = matchedURL[0].match(/(?:\?|&)t=(\d+)/);
 	threadId = threadId && threadId[1];
 	curPage = matchedURL[0].match(pageRex);
 	curPage = curPage && curPage[1];
-	protocolAndSubDomain = matchedURL[1];
+	protocol = matchedURL[1];
+    subdomain = matchedURL[2];
 
 	threadIdExtract = document.getElementsByName("searchthreadid")[0] || false;
 	threadId = threadId || (threadIdExtract && threadIdExtract.value);
@@ -307,15 +309,15 @@ function threadInfo() {
 	chrome.runtime.sendMessage(null, {
 		action : "popupUIcommand_setThreadInfo",
 		threadId : threadId,
-		url : protocolAndSubDomain + "neogaf.com/forum/showthread.php?t=" + threadId,
+		url : protocol + subdomain + "neogaf.com/forum/showthread.php?t=" + threadId,
 		curPage : curPage,
 		lastPage : lastPage,
 		threadTitle : threadTitle
 	}, function (response) {
 		//dev - populate page: this will get an answer as to whether the page should be populated.
-		populatePage = response.populatePage;
+		populatePage = response && response.populatePage; //dev - may simplify the following logic later
 		if (!pagePopulated && populatePage) doPagePopulate();
-		if (response.cachedPageList) {
+		if (response && response.cachedPageList) {
 			cachedPageList = response.cachedPageList;
 			//cachedPageList = request.cachedPageList;
 			if (!CACHE_PAGES)
@@ -323,7 +325,7 @@ function threadInfo() {
 			CACHE_PAGES = true;
 			resetNavigation();
 		}
-		if(response.newPostCount) newPostNotify(response.newPostCount);
+		if(response && response.newPostCount) newPostNotify(response.newPostCount);
 		return;
 	});
 
@@ -779,10 +781,10 @@ SetupDisplay.prototype = {
 		// var urlBase = "http://www.neogaf.com/forum/showpost.php?p=";
 		// if (parseInt(Math.random() * 4) + 1 > 3)
 		// urlBase = "http://www.neogaf.com/forum/sghreowpost.php?p=";
-
+  
 		try {
 			var r = new XMLHttpRequest();
-			r.open("GET", "http://www.neogaf.com/forum/showpost.php?p=" + postAr[0] + "&postcount=" + postAr[2], true);
+			r.open("GET", protocol + "www.neogaf.com/forum/showpost.php?p=" + postAr[0] + "&postcount=" + postAr[2], true);
 			r.responseType = "document";
 			r.onerror = function () {
 				//self.freePool();
